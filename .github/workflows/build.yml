@@ -35,7 +35,8 @@ jobs:
             pipewire \
             qt6-base \
             qt6-wayland \
-            layer-shell-qt
+            layer-shell-qt \
+            rust
 
       - name: Configure
         run: |
@@ -92,6 +93,9 @@ jobs:
             qt6-base-dev \
             qt6-base-dev-tools
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja \
@@ -145,6 +149,7 @@ jobs:
             mingw-w64-ucrt-x86_64-onnxruntime
             mingw-w64-ucrt-x86_64-qt6-base
             mingw-w64-ucrt-x86_64-qt6-tools
+            mingw-w64-ucrt-x86_64-rust
             mingw-w64-ucrt-x86_64-zxing-cpp
 
       - name: Configure
@@ -163,7 +168,7 @@ jobs:
         env:
           MARK_SHOT_TEST_REQUIRE_OCR_MODELS: '1'
         run: |
-          cmake -DMODEL_DIRECTORY="$PWD/build/ocr-test-models" -P scripts/download-ocr-test-models.cmake
+          cmake -DMODEL_DIRECTORY="$PWD/build/ocr-test-models" -P qt/scripts/download-ocr-test-models.cmake
           export MARK_SHOT_OCR_MODEL_DIR="$(cygpath -m "$PWD/build/ocr-test-models")"
           ctest --test-dir build --output-on-failure
 
@@ -179,7 +184,7 @@ jobs:
 
       - name: Deploy runtime libraries
         run: |
-          bash scripts/windows-deploy-runtime.sh "$PWD/app/bin" "$PWD/app/bin/mark-shot.exe"
+          bash qt/scripts/windows-deploy-runtime.sh "$PWD/app/bin" "$PWD/app/bin/mark-shot-rs.exe"
 
       - name: Sign Windows binaries
         shell: pwsh
@@ -188,7 +193,7 @@ jobs:
           WINDOWS_CODESIGN_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_CERTIFICATE_PASSWORD }}
           WINDOWS_CODESIGN_TIMESTAMP_URL: ${{ vars.WINDOWS_CODESIGN_TIMESTAMP_URL }}
         run: |
-          ./scripts/windows-sign-artifact.ps1 -Path "$env:GITHUB_WORKSPACE/app"
+          ./qt/scripts/windows-sign-artifact.ps1 -Path "$env:GITHUB_WORKSPACE/app"
 
       - name: Package artifact
         run: |
