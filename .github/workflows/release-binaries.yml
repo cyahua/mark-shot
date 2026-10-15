@@ -78,6 +78,9 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
 
+      - name: Test OCR plugin loading and dependencies
+        run: QT_QPA_PLATFORM=offscreen ctest --test-dir build -R '^ocr-rapid-plugin' --output-on-failure --no-tests=error
+
       - name: Package install tree
         shell: bash
         run: |
@@ -305,7 +308,7 @@ jobs:
       - name: Package install tree
         run: |
           cmake --install build --prefix "$PWD/app"
-          for plugin in ocr-rapid translate-openai translate-tencent translate-baidu translate-youdao code-scan-zxing; do
+          for plugin in ocr-rapid translate-openai translate-tencent translate-baidu translate-youdao translate-gemini translate-anthropic code-scan-zxing; do
             test -f "$PWD/app/lib/mark-shot/plugins/mark-shot-${plugin}.dll" || {
               echo "Expected provider plugin was not installed: ${plugin}" >&2
               exit 1

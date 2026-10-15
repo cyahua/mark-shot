@@ -1,0 +1,17 @@
+[package]
+name = "shot-editor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+shot-config = { path = "../shot-config" }
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

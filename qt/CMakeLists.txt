@@ -1,0 +1,479 @@
+cmake_minimum_required(VERSION 3.20)
+
+set(MARK_SHOT_QT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(PROJECT_VERSION "0.1.58")
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
+
+include(GNUInstallDirs)
+
+option(MARK_SHOT_WITH_LAYER_SHELL "Build the optional LayerShellQt plugin when available" ON)
+option(MARK_SHOT_REQUIRE_LAYER_SHELL "Fail configuration when the optional LayerShellQt plugin cannot be built" OFF)
+option(MARK_SHOT_WITH_LIBPORTAL "Enable libportal screencast negotiation when available" OFF)
+option(MARK_SHOT_REQUIRE_LIBPORTAL "Fail configuration when libportal support is requested but unavailable" OFF)
+option(MARK_SHOT_REQUIRE_FFMPEG "Fail configuration when FFmpeg libav recording support is unavailable" OFF)
+
+if(WIN32)
+    enable_language(RC)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(MARK_SHOT_LINUX TRUE)
+else()
+    set(MARK_SHOT_LINUX FALSE)
+endif()
+
+set(MARK_SHOT_QT_COMPONENTS Core Gui Widgets Concurrent Network Svg)
+if(MARK_SHOT_LINUX)
+    list(APPEND MARK_SHOT_QT_COMPONENTS DBus)
+endif()
+find_package(Qt6 REQUIRED COMPONENTS ${MARK_SHOT_QT_COMPONENTS})
+
+if(MARK_SHOT_WITH_LAYER_SHELL AND MARK_SHOT_LINUX)
+    find_package(LayerShellQt QUIET)
+    if(MARK_SHOT_REQUIRE_LAYER_SHELL AND NOT LayerShellQt_FOUND)
+        message(FATAL_ERROR "The optional LayerShellQt plugin was required but LayerShellQt was not found")
+    endif()
+elseif(MARK_SHOT_REQUIRE_LAYER_SHELL)
+    message(FATAL_ERROR "The optional LayerShellQt plugin is only supported on Linux")
+endif()
+if(MARK_SHOT_LINUX)
+    find_package(X11 COMPONENTS xcb QUIET)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(PipeWire QUIET IMPORTED_TARGET libpipewire-0.3)
+        pkg_check_modules(WaylandClient QUIET IMPORTED_TARGET wayland-client)
+        pkg_check_modules(PulseAudioRecording QUIET IMPORTED_TARGET
+            libpulse-simple
+            libpulse
+        )
+        if(MARK_SHOT_WITH_LIBPORTAL)
+            pkg_check_modules(LibPortal QUIET IMPORTED_TARGET libportal)
+            if(MARK_SHOT_REQUIRE_LIBPORTAL AND NOT LibPortal_FOUND)
+                message(FATAL_ERROR "libportal support was required but libportal was not found")
+            endif()
+        endif()
+    endif()
+    find_program(WAYLAND_SCANNER_EXECUTABLE NAMES wayland-scanner)
+elseif(MARK_SHOT_REQUIRE_LIBPORTAL)
+    message(FATAL_ERROR "libportal support is only supported on Linux")
+endif()
+
+include(cmake/zxing.cmake)
+
+include(cmake/ffmpeg_libav.cmake)
+
+if(COMMAND qt_standard_project_setup)
+    qt_standard_project_setup()
+    # qt_standard_project_setup() enables AUTOMOC/AUTOUIC but NOT AUTORCC, so a
+    # .qrc listed as a target source would be silently dropped (resources never
+    # embedded). Enable it explicitly so resources.qrc is compiled in.
+    set(CMAKE_AUTORCC ON)
+else()
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+endif()
+
+include(cmake/ipc_sources.cmake)
+include(cmake/cli_sources.cmake)
+include(cmake/capture_delay_sources.cmake)
+include(cmake/notification_sources.cmake)
+include(cmake/pipewire_capture_sources.cmake)
+include(cmake/provider_sources.cmake)
+include(cmake/marketplace_sources.cmake)
+include(cmake/recording_sources.cmake)
+include(cmake/settings_sources.cmake)
+include(cmake/shot_window_sources.cmake)
+include(cmake/capture_history_sources.cmake)
+include(cmake/memory_sources.cmake)
+mark_shot_optimize_cold_sources(${MARK_SHOT_SETTINGS_SOURCES} ${MARK_SHOT_MARKETPLACE_SOURCES}
+    src/main.cpp src/ui/i18n.cpp src/ui/i18n_task_windows.cpp)
+
+qt_add_executable(mark-shot
+    resources.qrc
+    ${MARK_SHOT_IPC_SOURCES}
+    ${MARK_SHOT_CLI_SOURCES}
+    ${MARK_SHOT_CAPTURE_DELAY_SOURCES}
+    ${MARK_SHOT_NOTIFICATION_SOURCES}
+    ${MARK_SHOT_PROVIDER_SOURCES}
+    ${MARK_SHOT_MARKETPLACE_SOURCES}
+    ${MARK_SHOT_RECORDING_SOURCES}
+    ${MARK_SHOT_SETTINGS_SOURCES}
+    ${MARK_SHOT_WINDOW_SOURCES}
+    ${MARK_SHOT_HISTORY_SOURCES}
+    ${MARK_SHOT_MEMORY_SOURCES}
+    src/main.cpp
+    src/clipboard_image.cpp
+    src/clipboard_image.h
+    src/clipboard_image_config.cpp
+    src/clipboard_image_config.h
+    src/clipboard_publish_policy.cpp
+    src/clipboard_publish_policy.h
+    src/code_scan_result.cpp
+    src/code_scan_result.h
+    src/cli/image_pin_launch.cpp
+    src/cli/image_pin_launch.h
+    src/app_config_defaults.cpp
+    src/app_config_defaults.h
+    src/app_config_store.cpp
+    src/app_config_store.h
+    src/debug_log.cpp
+    src/debug_log.h
+    src/export_image_effect.cpp
+    src/export_image_effect.h
+    src/config_value.cpp
+    src/config_value.h
+    src/toolbar_appearance_config.cpp
+    src/toolbar_appearance_config.h
+    src/translation_language_options.cpp
+    src/translation_language_options.h
+    src/capture_cursor_policy.cpp
+    src/capture_cursor_policy.h
+    src/capture_own_windows_policy.cpp
+    src/capture_own_windows_policy.h
+    src/capture_own_windows_policy_config.cpp
+    src/capture_own_windows_guard.cpp
+    src/capture_own_windows_guard.h
+    src/display_capture/display_capture_card.cpp
+    src/display_capture/display_capture_card.h
+    src/display_capture/display_capture_picker.cpp
+    src/display_capture/display_capture_picker.h
+    src/display_capture/display_capture_save.cpp
+    src/display_capture/display_capture_save.h
+    src/display_capture/display_capture_snapshot.cpp
+    src/display_capture/display_capture_snapshot.h
+    src/display_capture/display_capture_target.h
+    src/capture_cursor_policy_config.cpp
+    src/capture_double_click_action.cpp
+    src/capture_double_click_action.h
+    src/capture_double_click_action_config.cpp
+    src/selection_loupe_config.cpp
+    src/selection_loupe_config.h
+    src/capture_freeze_scope.cpp
+    src/capture_freeze_scope.h
+    src/capture_freeze_scope_config.cpp
+    src/kde_capture_config.cpp
+    src/kde_capture_config.h
+    src/capture_geometry.cpp
+    src/capture_geometry.h
+    src/capture_session_launcher.cpp
+    src/capture_session_launcher.h
+    src/capture_session_screen_frames.cpp
+    src/capture_session_screen_frames.h
+    src/layer_shell_plugin_interface.h
+    src/layer_shell_runtime.cpp
+    src/layer_shell_runtime.h
+    src/line_skeleton_path.cpp
+    src/line_skeleton_path.h
+    src/autostart/autostart_linux.cpp
+    src/autostart/autostart_manager.cpp
+    src/autostart/autostart_manager.h
+    src/autostart/autostart_windows.cpp
+    src/startup_config.cpp
+    src/startup_config.h
+    src/startup_shortcut_hint.cpp
+    src/startup_shortcut_hint.h
+    src/window_detection.cpp
+    src/window_detection.h
+    src/window_detection_session.h
+    src/windows_integration.cpp
+    src/windows_integration.h
+    src/windows_tray_config.cpp
+    src/windows_tray_controller.cpp
+    src/windows_tray_controller.h
+    src/screen_capture.cpp
+    src/screen_capture.h
+    src/screen_capture_api.cpp
+    src/screen_capture_core_helpers.cpp
+    src/screen_capture_cursor.cpp
+    src/screen_capture_cursor.h
+    src/screen_capture_dbus_portal.cpp
+    src/screen_capture_portal_guard.cpp
+    src/screen_capture_portal_guard.h
+    src/screen_capture_dbus_wayland.cpp
+    src/screen_capture_wayland_routing.cpp
+    src/screen_capture_internal.h
+    ${MARK_SHOT_PIPEWIRE_CAPTURE_SOURCES}
+    src/screen_capture_platform_api.cpp
+    src/screen_capture_windows_wgc.cpp
+    src/screen_capture_x11.cpp
+    src/shell_command.cpp
+    src/shell_command.h
+    src/ocr_result.cpp
+    src/ocr_result.h
+    src/save_path_config.cpp
+    src/save_path_config.h
+    src/selection_history.cpp
+    src/selection_history.h
+    src/shortcut_config.cpp
+    src/shortcut_config.h
+    src/pinned_window_config.cpp
+    src/pinned_window/pinned_image_window.cpp
+    src/pinned_window/pinned_image_window.h
+    src/pinned_window/pinned_image_window_geometry.cpp
+    src/pinned_window/pinned_image_window_layer_shell.cpp
+    src/pinned_window/pinned_image_window_paint.cpp
+    src/pinned_window/pinned_image_window_ocr.cpp
+    src/pinned_window/pinned_image_window_text_selection.cpp
+    src/pinned_window/pinned_image_window_translation.cpp
+    src/pinned_window/pinned_layer_shell_geometry.cpp
+    src/pinned_window/pinned_layer_shell_geometry.h
+    src/pinned_window/pinned_layer_shell_drag_preview.cpp
+    src/pinned_window/pinned_layer_shell_drag_preview.h
+    src/pinned_window/pinned_layer_shell_screen_binding.cpp
+    src/pinned_window/pinned_layer_shell_screen_binding.h
+    src/pinned_window/pinned_resize_controller.cpp
+    src/pinned_window/pinned_resize_controller.h
+    src/pinned_window/pinned_native_resize.cpp
+    src/pinned_window/pinned_native_resize.h
+    src/pinned_window/pinned_text_selection_metrics.cpp
+    src/pinned_window/pinned_text_selection_metrics.h
+    src/pinned_window_top.cpp
+    src/pinned_window_top.h
+    src/pinned_window/pinned_kde_keep_above.cpp
+    src/pinned_window/pinned_kde_keep_above.h
+    src/pinned_window/pinned_kde_keep_above_script.cpp
+    src/pinned_window/pinned_kde_keep_above_script.h
+    src/pinned_window/pinned_kde_keep_above_bridge.cpp
+    src/pinned_window/pinned_kde_keep_above_bridge.h
+    src/annotation_launch.cpp
+    src/annotation_launch.h
+    src/scroll/stitcher.cpp
+    src/scroll/stitcher.h
+    src/scroll/stitcher_fixed_regions.cpp
+    src/scroll/stitcher_fixed_regions.h
+    src/scroll/scroll_session_window.cpp
+    src/scroll/scroll_session_window_capture.cpp
+    src/scroll/scroll_session_window_events.cpp
+    src/scroll/scroll_session_window.h
+    src/scroll/scroll_session_window_internal.h
+    src/scroll/scroll_session_window_lifecycle.cpp
+    src/scroll/scroll_session_window_preview.cpp
+    src/ui/application_icon.cpp
+    src/ui/application_icon.h
+    src/ui/color_picker.cpp
+    src/ui/color_picker.h
+    src/ui/color_history_store.cpp
+    src/ui/color_history_store.h
+    src/ui/context_menu.cpp
+    src/ui/context_menu.h
+    src/ui/context_menu_config.cpp
+    src/ui/context_menu_config.h
+    src/ui/context_menu_input.cpp
+    src/ui/context_menu_model.cpp
+    src/ui/context_menu_model.h
+    src/ui/context_menu_native_bridge.cpp
+    src/ui/context_menu_native_bridge.h
+    src/ui/context_menu_painter.cpp
+    src/ui/context_menu_painter.h
+    src/ui/context_menu_placement.cpp
+    src/ui/context_menu_placement.h
+    src/ui/context_menu_style.cpp
+    src/ui/context_menu_style.h
+    src/ui/compact_combo_box.cpp
+    src/ui/compact_combo_box.h
+    src/ui/compact_toolbar.cpp
+    src/ui/compact_toolbar.h
+    src/ui/toolbar_grip.cpp
+    src/ui/toolbar_grip.h
+    src/ui/icons.cpp
+    src/ui/action_names.cpp
+    src/ui/icons.h
+    src/ui/icon_manifest.cpp
+    src/ui/icon_manifest.h
+    src/ui/svg_icon.cpp
+    src/ui/svg_icon.h
+    src/ui/transparency_background.cpp
+    src/ui/transparency_background.h
+    src/ui/canvas_scrollbar_style.cpp
+    src/ui/canvas_scrollbar_style.h
+    src/ui/disclosure_section.cpp
+    src/ui/disclosure_section.h
+    src/ui/settings_card.cpp
+    src/ui/settings_card.h
+    src/ui/settings_form_row.cpp
+    src/ui/settings_form_row.h
+    src/ui/interaction_cursor.cpp
+    src/ui/interaction_cursor.h
+    src/ui/window_resize_grip.cpp
+    src/ui/window_resize_grip.h
+    src/ui/form_row_visibility.h
+    src/ui/i18n.cpp
+    src/ui/i18n.h
+    src/ui/i18n_task_windows.cpp
+    src/ui/i18n_task_windows.h
+    src/ui/interface_language_config.cpp
+    src/ui/interface_language_config.h
+    src/ui/interface_theme_config.cpp
+    src/ui/interface_theme_config.h
+    src/ui/theme.cpp
+    src/ui/theme.h
+)
+
+include(cmake/capture_session_sources.cmake)
+
+target_include_directories(mark-shot PRIVATE src plugin-sdk)
+target_compile_definitions(mark-shot PRIVATE MARK_SHOT_VERSION="${CMAKE_PROJECT_VERSION}")
+if(WIN32)
+    set_property(TARGET mark-shot PROPERTY CXX_STANDARD 20)
+    set(MARK_SHOT_WINDOWS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/packaging/windows/mark-shot.ico")
+    configure_file(packaging/windows/mark-shot.rc.in "${CMAKE_CURRENT_BINARY_DIR}/mark-shot.rc" @ONLY)
+    target_sources(mark-shot PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/mark-shot.rc")
+    set_target_properties(mark-shot PROPERTIES WIN32_EXECUTABLE TRUE)
+    target_link_libraries(mark-shot PRIVATE d3d11 dwmapi dxgi ksuser ole32 psapi user32 uuid windowsapp)
+endif()
+
+target_link_libraries(mark-shot
+    PRIVATE
+        Qt6::Core
+        Qt6::Concurrent
+        Qt6::Gui
+        Qt6::Network
+        Qt6::Svg
+        Qt6::Widgets
+)
+
+if(ZXing_FOUND)
+    target_link_libraries(mark-shot PRIVATE ZXing::ZXing)
+    target_compile_definitions(mark-shot PRIVATE HAVE_ZXING_CPP ${MARK_SHOT_ZXING_COMPILE_DEFINITIONS})
+    message(STATUS "mark-shot: builtin zxing-cpp code scanner enabled (CMake package)")
+elseif(ZXingCpp_FOUND)
+    target_link_libraries(mark-shot PRIVATE PkgConfig::ZXingCpp)
+    target_compile_definitions(mark-shot PRIVATE HAVE_ZXING_CPP ${MARK_SHOT_ZXING_COMPILE_DEFINITIONS})
+    message(STATUS "mark-shot: builtin zxing-cpp code scanner enabled (pkg-config)")
+else()
+    message(STATUS "mark-shot: builtin zxing-cpp code scanner disabled")
+endif()
+
+if(MARK_SHOT_LINUX)
+    target_sources(mark-shot
+        PRIVATE
+            src/global_shortcut_portal.cpp
+            src/global_shortcut_portal.h
+            src/shortcuts/global_shortcut_backend.h
+            src/shortcuts/global_shortcut_gnome.cpp
+            src/shortcuts/global_shortcut_gnome.h
+            src/shortcuts/global_shortcut_keymap.cpp
+            src/shortcuts/global_shortcut_keymap.h
+            src/shortcuts/global_shortcut_manager.cpp
+            src/shortcuts/global_shortcut_manager.h
+    )
+    target_link_libraries(mark-shot PRIVATE Qt6::DBus)
+    target_compile_definitions(mark-shot PRIVATE MARK_SHOT_WITH_DBUS)
+endif()
+
+if(MARK_SHOT_LINUX AND X11_xcb_FOUND)
+    # X11 会话下 xdg-desktop-portal 普遍不实现 GlobalShortcuts 接口，
+    # 由该后端直接向 X 服务器抓取按键
+    target_sources(mark-shot
+        PRIVATE
+            src/shortcuts/global_shortcut_x11.cpp
+            src/shortcuts/global_shortcut_x11.h
+    )
+    target_link_libraries(mark-shot PRIVATE X11::xcb)
+    target_compile_definitions(mark-shot PRIVATE HAVE_XCB)
+endif()
+
+if(PulseAudioRecording_FOUND)
+    target_link_libraries(mark-shot PRIVATE PkgConfig::PulseAudioRecording)
+    target_compile_definitions(mark-shot PRIVATE HAVE_PULSE_RECORDING)
+    message(STATUS "mark-shot: PulseAudio lib recording capture enabled")
+else()
+    message(STATUS "mark-shot: PulseAudio lib recording capture disabled")
+endif()
+
+if(MARK_SHOT_WITH_LAYER_SHELL AND MARK_SHOT_LINUX AND LayerShellQt_FOUND)
+    qt_add_plugin(mark-shot-layer-shell MODULE)
+    target_sources(mark-shot-layer-shell
+        PRIVATE
+        src/debug_log.cpp
+        src/debug_log.h
+        src/layer_shell_plugin.cpp
+        src/layer_shell_plugin_interface.h
+    )
+    target_include_directories(mark-shot-layer-shell PRIVATE src)
+    target_link_libraries(mark-shot-layer-shell
+        PRIVATE
+            Qt6::Core
+            Qt6::Gui
+            Qt6::Widgets
+            LayerShellQt::Interface
+    )
+    set_target_properties(mark-shot-layer-shell PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+    # 主程序运行时通过 QPluginLoader 动态加载该插件；这里建立构建依赖，
+    # 避免只编译 mark-shot 目标时漏掉 libmark-shot-layer-shell.so。
+    add_dependencies(mark-shot mark-shot-layer-shell)
+    message(STATUS "mark-shot: LayerShellQt found, optional layer-shell plugin enabled")
+elseif(MARK_SHOT_WITH_LAYER_SHELL AND MARK_SHOT_LINUX)
+    message(STATUS "mark-shot: LayerShellQt not found, building without optional layer-shell plugin")
+elseif(MARK_SHOT_WITH_LAYER_SHELL)
+    message(STATUS "mark-shot: LayerShellQt is Linux-only, building without optional layer-shell plugin")
+else()
+    message(STATUS "mark-shot: optional layer-shell plugin disabled")
+endif()
+
+if(MARK_SHOT_LINUX AND WaylandClient_FOUND AND WAYLAND_SCANNER_EXECUTABLE)
+    set(MARK_SHOT_WAYLAND_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/wayland")
+    set(MARK_SHOT_WLR_SCREENCOPY_XML "${CMAKE_CURRENT_SOURCE_DIR}/protocols/wlr-screencopy-unstable-v1.xml")
+    set(MARK_SHOT_WLR_SCREENCOPY_HEADER
+        "${MARK_SHOT_WAYLAND_GENERATED_DIR}/wlr-screencopy-unstable-v1-client-protocol.h")
+    set(MARK_SHOT_WLR_SCREENCOPY_CODE
+        "${MARK_SHOT_WAYLAND_GENERATED_DIR}/wlr-screencopy-unstable-v1-protocol.c")
+    add_custom_command(
+        OUTPUT
+            "${MARK_SHOT_WLR_SCREENCOPY_HEADER}"
+            "${MARK_SHOT_WLR_SCREENCOPY_CODE}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${MARK_SHOT_WAYLAND_GENERATED_DIR}"
+        COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header
+            "${MARK_SHOT_WLR_SCREENCOPY_XML}"
+            "${MARK_SHOT_WLR_SCREENCOPY_HEADER}"
+        COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" private-code
+            "${MARK_SHOT_WLR_SCREENCOPY_XML}"
+            "${MARK_SHOT_WLR_SCREENCOPY_CODE}"
+        DEPENDS "${MARK_SHOT_WLR_SCREENCOPY_XML}"
+        VERBATIM
+    )
+    target_sources(mark-shot PRIVATE "${MARK_SHOT_WLR_SCREENCOPY_CODE}")
+    target_include_directories(mark-shot PRIVATE "${MARK_SHOT_WAYLAND_GENERATED_DIR}")
+    target_link_libraries(mark-shot PRIVATE PkgConfig::WaylandClient)
+    target_compile_definitions(mark-shot PRIVATE HAVE_WLROOTS_SCREENCOPY)
+    message(STATUS "mark-shot: wlroots screencopy recording backend enabled")
+elseif(MARK_SHOT_LINUX)
+    message(STATUS "mark-shot: wlroots screencopy recording backend disabled")
+endif()
+
+include(cmake/pipewire_capture_target.cmake)
+
+# provider 插件：可选构建，依赖缺失时各自跳过；需在测试注册前定义 target
+add_subdirectory(plugins/ocr-rapid)
+add_subdirectory(plugins/translate-common)
+add_subdirectory(plugins/translate-openai)
+add_subdirectory(plugins/translate-tencent)
+add_subdirectory(plugins/translate-baidu)
+add_subdirectory(plugins/translate-youdao)
+add_subdirectory(plugins/translate-gemini)
+add_subdirectory(plugins/translate-anthropic)
+add_subdirectory(plugins/code-scan-zxing)
+
+include(cmake/rust_runtime.cmake)
+include(cmake/recording_backend.cmake)
+
+include(CTest)
+if(BUILD_TESTING)
+    include(cmake/core_tests.cmake)
+    include(cmake/annotation_cursor_tests.cmake)
+    include(cmake/window_regression_tests.cmake)
+    include(cmake/kde_pinned_window_tests.cmake)
+    include(cmake/hyprland_pinned_window_tests.cmake)
+    include(cmake/rust_core_tests.cmake)
+    include(cmake/performance_tests.cmake)
+    include(cmake/test_environment.cmake)
+endif()
+
+include(cmake/install_rules.cmake)

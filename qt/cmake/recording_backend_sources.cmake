@@ -1,0 +1,56 @@
+# 【录制】【后端边界】这些实现只编入后端，主程序不引用 FFmpeg 符号
+set(MARK_SHOT_LIBAV_BACKEND_SOURCES
+    src/recording/recording_memory_policy.cpp
+    src/recording/recording_memory_policy.h
+    plugins/recording-libav/recording_libav_backend.cpp
+    plugins/recording-libav/recording_backend_log.cpp
+    plugins/recording-libav/recording_backend_log.h
+    src/recording/audio/audio_capture_reader.h
+    src/recording/audio/audio_capture_reader_factory.cpp
+    src/recording/audio/audio_capture_reader_factory.h
+    src/recording/audio/audio_capture_sample.h
+    src/recording/audio/pulse_audio_capture_reader.cpp
+    src/recording/audio/pulse_audio_capture_reader.h
+    src/recording/audio/wasapi_audio_capture_reader.cpp
+    src/recording/audio/wasapi_audio_capture_reader.h
+    src/recording/gif_recording_writer.cpp
+    src/recording/gif_recording_writer.h
+    src/recording/libav/libav_gif_palette_filter.cpp
+    src/recording/libav/libav_gif_palette_filter.h
+    src/recording/libav/libav_hw_encoder_context.cpp
+    src/recording/libav/libav_hw_encoder_context.h
+    src/recording/libav/libav_muxer.cpp
+    src/recording/libav/libav_muxer.h
+    src/recording/libav/libav_video_encoder_setup.cpp
+    src/recording/libav/libav_video_encoder_setup.h
+    src/recording/libav/libav_video_scaler.cpp
+    src/recording/libav/libav_video_scaler.h
+    src/recording/libav_error.cpp
+    src/recording/libav_error.h
+    src/recording/libav_audio_encoder.cpp
+    src/recording/libav_audio_encoder.h
+    src/recording/libav_gif_recording_process.cpp
+    src/recording/libav_gif_recording_process.h
+    src/recording/libav_recording_process.cpp
+    src/recording/libav_recording_process.h
+    src/recording/recording_encoder_probe.cpp
+    src/recording/recording_encoder_probe.h
+    src/recording/recording_video_encoder_options.cpp
+    src/recording/recording_video_encoder_options.h
+    src/recording/video_recording_writer.cpp
+    src/recording/video_recording_writer.h
+    src/recording/recording_container_format.cpp
+    src/recording/recording_frame_converter.cpp
+    src/recording/recording_frame_payload.cpp
+    src/recording/recording_frame_pacer.cpp
+    src/recording/recording_frame_rate_limiter.cpp
+    src/recording/recording_quality_options.cpp
+)
+
+set(MARK_SHOT_BACKEND_LOADER_SOURCES
+    src/recording/backend/recording_backend_api.h
+    src/recording/backend/recording_backend_loader.cpp
+    src/recording/backend/recording_backend_loader.h
+    src/recording/backend/backend_recording_writer.cpp
+    src/recording/backend/backend_recording_writer.h
+)

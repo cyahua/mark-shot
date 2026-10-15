@@ -30,6 +30,7 @@ jobs:
             ffmpeg \
             gcc \
             ninja \
+            onnxruntime-cpu \
             pkgconf \
             pipewire \
             qt6-base \
@@ -159,12 +160,17 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        env:
+          MARK_SHOT_TEST_REQUIRE_OCR_MODELS: '1'
+        run: |
+          cmake -DMODEL_DIRECTORY="$PWD/build/ocr-test-models" -P scripts/download-ocr-test-models.cmake
+          export MARK_SHOT_OCR_MODEL_DIR="$(cygpath -m "$PWD/build/ocr-test-models")"
+          ctest --test-dir build --output-on-failure
 
       - name: Install into artifact tree
         run: |
           cmake --install build --prefix "$PWD/app"
-          for plugin in ocr-rapid translate-openai translate-tencent translate-baidu translate-youdao code-scan-zxing; do
+          for plugin in ocr-rapid translate-openai translate-tencent translate-baidu translate-youdao translate-gemini translate-anthropic code-scan-zxing; do
             test -f "$PWD/app/lib/mark-shot/plugins/mark-shot-${plugin}.dll" || {
               echo "Expected provider plugin was not installed: ${plugin}" >&2
               exit 1

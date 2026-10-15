@@ -1,0 +1,12 @@
+set(MARK_SHOT_MARKETPLACE_SOURCES
+    src/marketplace/plugin_asset_downloader.cpp
+    src/marketplace/plugin_asset_downloader.h
+    src/marketplace/plugin_index_parser.cpp
+    src/marketplace/plugin_index_parser.h
+    src/marketplace/plugin_installer.cpp
+    src/marketplace/plugin_installer.h
+    src/marketplace/plugin_updates.cpp
+    src/marketplace/plugin_updates.h
+    src/marketplace/plugin_marketplace_client.cpp
+    src/marketplace/plugin_marketplace_client.h
+)

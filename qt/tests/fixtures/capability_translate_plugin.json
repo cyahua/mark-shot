@@ -1,0 +1,12 @@
+{
+    "name": "mark-shot-capability-fixture",
+    "version": "1.0.0",
+    "vendor": "mark-shot",
+    "capabilities": [
+        {
+            "type": "translation",
+            "providerId": "capability-fixture",
+            "displayName": "Capability Fixture"
+        }
+    ]
+}

@@ -1,0 +1,92 @@
+[
+    {
+        "height": 7,
+        "radius": 0,
+        "sha256": "f1792058e814d14971fa29a51e5f81268f55a9c858b2f2c662c76ba569c452ec",
+        "width": 13
+    },
+    {
+        "height": 7,
+        "radius": 1,
+        "sha256": "b38533ce5a87b1f53f721d535658bac841bfdff245e367272ae549312e4c8bd7",
+        "width": 13
+    },
+    {
+        "height": 7,
+        "radius": 2,
+        "sha256": "b38533ce5a87b1f53f721d535658bac841bfdff245e367272ae549312e4c8bd7",
+        "width": 13
+    },
+    {
+        "height": 7,
+        "radius": 6,
+        "sha256": "1f28c1e010db5db88912d06013d2b860edc44eefa7c0c7f488c88c706e8ce996",
+        "width": 13
+    },
+    {
+        "height": 7,
+        "radius": 48,
+        "sha256": "5b9c6674f38bcd1449b27aa848a2aeedbb0644b791669e17c511121a1e4024ea",
+        "width": 13
+    },
+    {
+        "height": 17,
+        "radius": 0,
+        "sha256": "60374c6339b2df287a1e920e0c9ab0ab84041be60c28d30dd20a30ab17bceac8",
+        "width": 1
+    },
+    {
+        "height": 17,
+        "radius": 1,
+        "sha256": "60374c6339b2df287a1e920e0c9ab0ab84041be60c28d30dd20a30ab17bceac8",
+        "width": 1
+    },
+    {
+        "height": 17,
+        "radius": 2,
+        "sha256": "60374c6339b2df287a1e920e0c9ab0ab84041be60c28d30dd20a30ab17bceac8",
+        "width": 1
+    },
+    {
+        "height": 17,
+        "radius": 6,
+        "sha256": "60374c6339b2df287a1e920e0c9ab0ab84041be60c28d30dd20a30ab17bceac8",
+        "width": 1
+    },
+    {
+        "height": 17,
+        "radius": 48,
+        "sha256": "60374c6339b2df287a1e920e0c9ab0ab84041be60c28d30dd20a30ab17bceac8",
+        "width": 1
+    },
+    {
+        "height": 1,
+        "radius": 0,
+        "sha256": "46bcc677cd4f09c542d72c47f058fe27e3ddb59f724a7e8654f8b5b51545be1a",
+        "width": 9
+    },
+    {
+        "height": 1,
+        "radius": 1,
+        "sha256": "46bcc677cd4f09c542d72c47f058fe27e3ddb59f724a7e8654f8b5b51545be1a",
+        "width": 9
+    },
+    {
+        "height": 1,
+        "radius": 2,
+        "sha256": "46bcc677cd4f09c542d72c47f058fe27e3ddb59f724a7e8654f8b5b51545be1a",
+        "width": 9
+    },
+    {
+        "height": 1,
+        "radius": 6,
+        "sha256": "46bcc677cd4f09c542d72c47f058fe27e3ddb59f724a7e8654f8b5b51545be1a",
+        "width": 9
+    },
+    {
+        "height": 1,
+        "radius": 48,
+        "sha256": "46bcc677cd4f09c542d72c47f058fe27e3ddb59f724a7e8654f8b5b51545be1a",
+        "width": 9
+    }
+]

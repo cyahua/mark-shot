@@ -1,0 +1,18 @@
+set(MARK_SHOT_OCR_WINDOW_SOURCES
+    src/ocr_result_window/ocr_result_window.cpp
+    src/ocr_result_window/ocr_result_window.h
+    src/ocr_result_window/ocr_result_window_config.cpp
+    src/ocr_result_window/ocr_result_window_config.h
+    src/ocr_result_window/ocr_result_window_geometry.cpp
+    src/ocr_result_window/ocr_result_window_geometry.h
+    src/ocr_result_window/ocr_result_window_layout.cpp
+    src/ocr_result_window/ocr_result_window_views.cpp
+    src/ocr_result_window/ocr_result_window_placement.cpp
+    src/ocr_result_window/ocr_result_window_style.cpp
+    src/ocr_result_window/ocr_result_window_style.h
+    src/ocr_result_window/ocr_result_window_translation.cpp
+    src/ocr_result_window/ocr_source_preview.cpp
+    src/ocr_result_window/ocr_source_preview.h
+    src/ocr_result_window/ocr_text_pane.cpp
+    src/ocr_result_window/ocr_text_pane.h
+)

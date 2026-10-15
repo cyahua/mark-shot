@@ -1,0 +1,299 @@
+#include "ui/compact_toolbar.h"
+
+#include "ui/toolbar_grip.h"
+
+#include <QBoxLayout>
+#include <QEvent>
+#include <QPainter>
+#include <QPushButton>
+#include <QStyle>
+
+namespace markshot::ui {
+namespace {
+
+// 与主题工具栏外观一致的面板色板
+const QColor kPanelFill(15, 17, 23, 230);
+const QColor kPanelBorder(255, 255, 255, 28);
+const QColor kSeparatorColor(148, 163, 184, 70);
+constexpr qreal kPanelRadius = 11.0;
+constexpr int kSeparatorLength = 16;
+// 分隔线两侧留白只依赖布局间距，避免分组后工具栏总长超过未分组版本，进而撑大全屏窗口最小宽度
+constexpr int kSeparatorGap = 0;
+
+/// @brief 将按钮角色转换为主题样式表使用的 role 属性值
+/// @param role 按钮角色
+/// @return role 属性值；普通按钮返回空字符串
+QString roleName(ToolbarButtonRole role)
+{
+    switch (role) {
+    case ToolbarButtonRole::Primary:
+        return QStringLiteral("primary");
+    case ToolbarButtonRole::Accent:
+        return QStringLiteral("accent");
+    case ToolbarButtonRole::Secondary:
+        return QStringLiteral("secondary");
+    case ToolbarButtonRole::Danger:
+        return QStringLiteral("danger");
+    case ToolbarButtonRole::Normal:
+        break;
+    }
+    return {};
+}
+
+}
+
+/// @brief 【截图工具栏】【分组分隔】绘制分组间细线，方向与工具栏排列垂直
+class ToolbarSeparator final : public QWidget {
+public:
+    /// @brief 创建分隔线
+    /// @param parent 所属工具栏
+    explicit ToolbarSeparator(QWidget *parent)
+        : QWidget(parent)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        setOrientation(Qt::Horizontal);
+    }
+
+    /// @brief 按工具栏方向设置分隔线尺寸
+    /// @param orientation 工具栏排列方向
+    /// @return 无返回值
+    void setOrientation(Qt::Orientation orientation)
+    {
+        m_orientation = orientation;
+        const int thickness = 1 + kSeparatorGap * 2;
+        if (orientation == Qt::Horizontal) {
+            setFixedSize(thickness, kSeparatorLength);
+        } else {
+            setFixedSize(kSeparatorLength, thickness);
+        }
+    }
+
+protected:
+    /// @brief 绘制居中的单像素细线
+    /// @param event 绘制事件
+    /// @return 无返回值
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event)
+        QPainter painter(this);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(kSeparatorColor);
+        if (m_orientation == Qt::Horizontal) {
+            painter.drawRect(QRect(width() / 2, 0, 1, height()));
+        } else {
+            painter.drawRect(QRect(0, height() / 2, width(), 1));
+        }
+    }
+
+private:
+    Qt::Orientation m_orientation = Qt::Horizontal;
+};
+
+CompactToolbar::CompactToolbar(const QString &objectName,
+                               const QString &gripObjectName,
+                               Qt::Orientation orientation,
+                               Metrics metrics,
+                               QWidget *parent)
+    : QWidget(parent)
+    , m_orientation(orientation)
+    , m_metrics(metrics)
+{
+    setObjectName(objectName);
+    setCursor(Qt::ArrowCursor);
+
+    // 1. 创建单一方向盒布局，横纵切换只改变方向，不重建子控件
+    m_layout = new QBoxLayout(orientation == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom, this);
+    m_layout->setContentsMargins(metrics.margin, metrics.margin, metrics.margin, metrics.margin);
+    m_layout->setSpacing(metrics.spacing);
+
+    // 2. 首位放置拖拽握柄，拖拽与吸附逻辑由所属窗口通过事件过滤器处理
+    m_grip = new ToolbarGrip(this);
+    m_grip->setObjectName(gripObjectName);
+    m_grip->setOrientation(orientation);
+    m_layout->addWidget(m_grip);
+}
+
+QWidget *CompactToolbar::grip() const
+{
+    return m_grip;
+}
+
+Qt::Orientation CompactToolbar::orientation() const
+{
+    return m_orientation;
+}
+
+void CompactToolbar::setOrientation(Qt::Orientation orientation)
+{
+    if (m_orientation == orientation) {
+        return;
+    }
+    m_orientation = orientation;
+    // 1. 切换布局方向并同步握柄、分隔线形态
+    m_layout->setDirection(orientation == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
+    m_grip->setOrientation(orientation);
+    for (const Group &group : std::as_const(m_groups)) {
+        if (group.separator) {
+            group.separator->setOrientation(orientation);
+        }
+    }
+    // 2. 让父窗口按新尺寸提示重新计算几何
+    m_layout->invalidate();
+    updateGeometry();
+    adjustSize();
+}
+
+int CompactToolbar::addGroup()
+{
+    Group group;
+    // 1. 非首个分组前插入分隔线，可见性在按钮显隐后统一计算
+    if (!m_groups.isEmpty()) {
+        group.separator = new ToolbarSeparator(this);
+        group.separator->setOrientation(m_orientation);
+        m_layout->addWidget(group.separator, 0, Qt::AlignCenter);
+    }
+    m_groups.append(group);
+    refreshSeparators();
+    return m_groups.size() - 1;
+}
+
+QPushButton *CompactToolbar::addButton(const ToolbarButtonSpec &spec)
+{
+    if (m_groups.isEmpty()) {
+        addGroup();
+    }
+
+    // 1. 创建按钮并写入主题样式依赖的 action、role 属性
+    auto *button = new QPushButton(this);
+    button->setIcon(spec.icon);
+    button->setIconSize(QSize(m_metrics.iconSize, m_metrics.iconSize));
+    button->setFocusPolicy(Qt::NoFocus);
+    button->setToolTip(spec.tooltip);
+    button->setAccessibleName(spec.tooltip);
+    button->setProperty("action", spec.actionKey);
+    button->setProperty("active", false);
+    const QString role = roleName(spec.role);
+    if (!role.isEmpty()) {
+        button->setProperty("role", role);
+    }
+    button->setEnabled(spec.enabled);
+
+    // 2. 加入当前分组并监听显隐，用于维护分隔线
+    button->installEventFilter(this);
+    m_layout->addWidget(button);
+    m_groups.last().buttons.append(button);
+    refreshSeparators();
+    return button;
+}
+
+void CompactToolbar::setGroupVisible(int group, bool visible)
+{
+    if (group < 0 || group >= m_groups.size()) {
+        return;
+    }
+    // 1. 批量切换按钮，结束后统一刷新分隔线，避免逐个按钮重复计算
+    m_refreshingSeparators = true;
+    for (QPushButton *groupButton : std::as_const(m_groups[group].buttons)) {
+        groupButton->setVisible(visible);
+    }
+    m_refreshingSeparators = false;
+    refreshSeparators();
+    updateGeometry();
+}
+
+bool CompactToolbar::isGroupVisible(int group) const
+{
+    if (group < 0 || group >= m_groups.size()) {
+        return false;
+    }
+    for (const QPushButton *groupButton : m_groups[group].buttons) {
+        if (!groupButton->isHidden()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int CompactToolbar::groupCount() const
+{
+    return m_groups.size();
+}
+
+QPushButton *CompactToolbar::button(const QString &actionKey) const
+{
+    for (const Group &group : m_groups) {
+        for (QPushButton *groupButton : group.buttons) {
+            if (groupButton->property("action").toString() == actionKey) {
+                return groupButton;
+            }
+        }
+    }
+    return nullptr;
+}
+
+QVector<QPushButton *> CompactToolbar::buttons() const
+{
+    QVector<QPushButton *> result;
+    for (const Group &group : m_groups) {
+        result += group.buttons;
+    }
+    return result;
+}
+
+void CompactToolbar::setActiveActions(const QSet<QString> &activeKeys)
+{
+    for (const Group &group : std::as_const(m_groups)) {
+        for (QPushButton *groupButton : group.buttons) {
+            const bool active = activeKeys.contains(groupButton->property("action").toString());
+            if (groupButton->property("active").toBool() == active) {
+                continue;
+            }
+            // 1. 仅对状态变化的按钮重新应用动态属性样式
+            groupButton->setProperty("active", active);
+            groupButton->style()->unpolish(groupButton);
+            groupButton->style()->polish(groupButton);
+            groupButton->update();
+        }
+    }
+}
+
+void CompactToolbar::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event)
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(kPanelBorder, 1.0));
+    painter.setBrush(kPanelFill);
+    painter.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5), kPanelRadius, kPanelRadius);
+}
+
+bool CompactToolbar::eventFilter(QObject *watched, QEvent *event)
+{
+    // 1. 按钮单独显隐时刷新分隔线；批量切换期间由调用方统一刷新
+    if (!m_refreshingSeparators
+        && (event->type() == QEvent::ShowToParent || event->type() == QEvent::HideToParent)
+        && qobject_cast<QPushButton *>(watched)) {
+        refreshSeparators();
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
+void CompactToolbar::refreshSeparators()
+{
+    if (m_refreshingSeparators) {
+        return;
+    }
+    m_refreshingSeparators = true;
+    // 1. 分隔线仅出现在前方已有可见分组、且本分组也可见的位置
+    bool hasVisibleBefore = false;
+    for (int index = 0; index < m_groups.size(); ++index) {
+        const bool groupVisible = isGroupVisible(index);
+        if (ToolbarSeparator *separator = m_groups[index].separator) {
+            separator->setVisible(hasVisibleBefore && groupVisible);
+        }
+        hasVisibleBefore = hasVisibleBefore || groupVisible;
+    }
+    m_refreshingSeparators = false;
+}
+
+}

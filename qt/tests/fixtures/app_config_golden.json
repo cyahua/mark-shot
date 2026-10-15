@@ -1,0 +1,126 @@
+{
+    "annotation": {
+        "defaultColor": "#FF4D4D",
+        "defaultTool": "move",
+        "fullscreenDefaultTool": "move"
+    },
+    "capture": {
+        "doubleClickAction": "copy",
+        "selectionLoupe": {
+            "enabled": false
+        },
+        "wayland": {
+            "kde": {
+                "kwinScreenshot": {
+                    "enabled": true
+                }
+            }
+        }
+    },
+    "captureHistory": {
+        "enabled": true,
+        "limit": 50
+    },
+    "clipboard": {
+        "image": {
+            "mode": "image/png",
+            "thresholdM": 4
+        }
+    },
+    "codeScan": {
+        "command": "",
+        "timeoutMs": 15000
+    },
+    "debug": {
+        "enabled": false,
+        "logPath": ""
+    },
+    "env": {
+    },
+    "export": {
+        "imageFrame": {
+            "cornerRadius": 18,
+            "enabled": false,
+            "padding": 112,
+            "shadowOffsetY": 28,
+            "shadowOpacity": 0.32,
+            "shadowRadius": 72
+        }
+    },
+    "ocr": {
+        "backend": "rapidocr",
+        "command": "",
+        "enabled": true,
+        "timeoutMs": 30000
+    },
+    "ocrResultWindow": {
+        "alwaysOnTop": false
+    },
+    "pinnedWindow": {
+        "alwaysOnTop": true,
+        "autoOcr": false,
+        "border": true,
+        "borderColor": "#5EEAD4",
+        "borderWidth": 2,
+        "textSelectionCopyEnabled": true
+    },
+    "save": {
+        "pathTemplate": "{pictures}/mark-shot/mark-shot-{datetime}.png"
+    },
+    "scrollCapture": {
+        "frame": 5,
+        "hidePreviewDuringCapture": false,
+        "previewGap": 5
+    },
+    "shortcuts": {
+        "actions": {
+            "copy": "Ctrl+C",
+            "pin": "Ctrl+P",
+            "save": "Ctrl+S"
+        },
+        "startup": {
+            "codeScanner": "Q",
+            "colorPicker": "C",
+            "displayCapture": "D",
+            "ruler": "R"
+        },
+        "tools": {
+            "pen": "P",
+            "rectangle": "R"
+        }
+    },
+    "toolbar": {
+        "fontSize": "middle",
+        "iconSize": "middle"
+    },
+    "translation": {
+        "apiBase": "https://api.openai.com/v1",
+        "apiKey": "",
+        "apiKeyEnv": "OPENAI_API_KEY",
+        "autoAfterOcr": false,
+        "command": "",
+        "extraBody": {
+        },
+        "model": "gpt-4o-mini",
+        "systemPrompt": "",
+        "targetLanguage": "Simplified Chinese",
+        "temperature": 0.2,
+        "timeoutMs": 60000,
+        "timeoutSeconds": 60
+    },
+    "windowDetection": {
+        "command": "test-window-helper",
+        "enabled": true,
+        "env": {
+        },
+        "timeoutMs": 1000
+    },
+    "windows": {
+        "hotkeys": {
+            "capture": "Ctrl+Alt+S"
+        },
+        "tray": {
+            "enabled": false
+        }
+    }
+}
