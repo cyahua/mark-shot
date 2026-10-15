@@ -7,7 +7,7 @@ import argparse
 import os
 from pathlib import Path
 
-EXCLUDED_DIRS = {".git", "target", "__pycache__", ".cache", "node_modules"}
+EXCLUDED_DIRS = {".git", "target", "vendor", "__pycache__", ".cache", "node_modules"}
 SUFFIXES = {".rs", ".cpp", ".h", ".c", ".js", ".py", ".qml", ".cmake", ".md", ".toml"}
 
 

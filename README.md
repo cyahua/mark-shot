@@ -36,7 +36,7 @@ Linux 还需要 Qt DBus；启用测试时需要 Qt Test。Windows 原生采集�
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
 cmake --build build --parallel
-./build/mark-shot-rs
+./build/mark-shot
 ```
 
 只构建应用可使用 `cmake --build build --target mark-shot --parallel`。
@@ -44,7 +44,7 @@ cmake --build build --parallel
 
 FFmpeg、PipeWire、Wayland、LayerShellQt、ZXing、ONNX Runtime 和 PulseAudio 使用原项目的可选依赖探测。
 缺少可选库时，对应能力不可用；CMake 会明确输出启用结果。开发环境可通过
-`PATH="$PWD/qt/scripts:$PATH" ./build/mark-shot-rs` 使用本仓库的辅助脚本。
+`PATH="$PWD/qt/scripts:$PATH" ./build/mark-shot` 使用本仓库的辅助脚本。
 构建产物中的 provider 插件统一位于可执行文件旁的 `plugins/` 目录。
 
 录制编解码器独立放在 `recording/`，首次开始录制时才加载，不能在发行包中遗漏。
@@ -52,17 +52,18 @@ Release 默认启用链接期优化、未引用段删除和冷路径体积优化
 Windows 裁剪依赖、签名后归档、内存测量及已验证结果见
 [`docs/performance.md`](docs/performance.md)。
 
-程序使用独立的 `mark-shot-rs` 单实例通道，避免启动请求被旧 C++ 进程接管。
+可执行文件、桌面入口和应用数据目录沿用 `mark-shot`，可直接替换原发行包；单实例通道使用独立的
+`mark-shot-rs` 名称，避免启动请求被旧 C++ 进程接管。
 未指定配置目录时保留原 Mark Shot 配置兼容逻辑；需要隔离配置时，设置绝对路径
 `MARK_SHOT_CONFIG_DIR=/path/to/config`，该模式不会回退到用户目录。
 
 ```sh
 # 打开图片进行标注，不进行屏幕采集
-./build/mark-shot-rs /absolute/path/to/image.png
+./build/mark-shot /absolute/path/to/image.png
 
 # 无窗口列出显示器，或采集到文件
-./build/mark-shot-rs --list-displays
-./build/mark-shot-rs --capture-to /tmp/shot.png
+./build/mark-shot --list-displays
+./build/mark-shot --capture-to /tmp/shot.png
 ```
 
 仅构建和测试 Rust 核心不需要 Qt：
@@ -78,6 +79,14 @@ cargo fmt --all -- --check
 依赖版本由 `Cargo.lock` 固定，工作区内依赖方向单一。
 CMake 在当前构建目录的 `cargo/` 中生成静态库，不会修改全局 Cargo 配置。
 交叉编译需要显式设置与 C++ 编译器匹配的 `MARK_SHOT_RUST_TARGET`，并安装该 Rust 目标。
+无网络的发行构建先执行 `scripts/packaging/vendor-rust-crates.sh` 生成 `vendor/`，再传入
+`-DMARK_SHOT_CARGO_VENDOR_DIR=vendor`；构建和 `rust-*` 测试都改为离线读取该目录。
+
+## 发行打包
+
+工作流、`debian/`、`flake.nix` 与发布说明位于仓库根目录，其余打包清单位于 `qt/packaging/`。
+各渠道均在 CI 中安装 Rust 1.85 以上的工具链；Debian 源码包和 Flatpak 无法联网下载 crate，
+使用 `scripts/packaging/` 生成只含 Linux 依赖的 vendor 组件，Nix 通过 `importCargoLock` 预取。
 
 ## 验证
 

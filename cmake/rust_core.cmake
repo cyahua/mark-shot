@@ -5,7 +5,22 @@ set(MARK_SHOT_RUST_TARGET "" CACHE STRING "Optional explicit Rust target triple"
 if(CMAKE_CROSSCOMPILING AND NOT MARK_SHOT_RUST_TARGET)
     message(FATAL_ERROR "Cross builds require MARK_SHOT_RUST_TARGET matching the C++ toolchain")
 endif()
+set(MARK_SHOT_CARGO_VENDOR_DIR "" CACHE PATH "Optional vendored crate directory for offline builds")
 set(_cargo_target_dir "${CMAKE_BINARY_DIR}/cargo")
+# 【构建】【Cargo参数】构建与测试共用锁文件、目标目录和可选离线源
+set(MARK_SHOT_CARGO_ENV "CARGO_TARGET_DIR=${_cargo_target_dir}")
+set(MARK_SHOT_CARGO_ARGS --locked)
+if(MARK_SHOT_CARGO_VENDOR_DIR)
+    get_filename_component(_cargo_vendor_dir "${MARK_SHOT_CARGO_VENDOR_DIR}" ABSOLUTE
+        BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    if(NOT EXISTS "${_cargo_vendor_dir}")
+        message(FATAL_ERROR "MARK_SHOT_CARGO_VENDOR_DIR does not exist: ${_cargo_vendor_dir}")
+    endif()
+    list(APPEND MARK_SHOT_CARGO_ARGS --offline
+        --config "source.crates-io.replace-with=\"vendored-sources\""
+        --config "source.vendored-sources.directory=\"${_cargo_vendor_dir}\"")
+    message(STATUS "mark-shot: Rust crates are built offline from ${_cargo_vendor_dir}")
+endif()
 set(_cargo_profile "$<IF:$<CONFIG:Debug>,dev,release>")
 set(_archive_profile "$<IF:$<CONFIG:Debug>,debug,release>")
 set(_target_args)
@@ -25,8 +40,8 @@ file(GLOB_RECURSE _rust_inputs CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/crates/*.json"
     "${CMAKE_CURRENT_SOURCE_DIR}/crates/*/Cargo.toml")
 add_custom_command(OUTPUT "${_archive}"
-    COMMAND "${CMAKE_COMMAND}" -E env "CARGO_TARGET_DIR=${_cargo_target_dir}"
-        "${CARGO_EXECUTABLE}" build --locked --package shot-ffi
+    COMMAND "${CMAKE_COMMAND}" -E env ${MARK_SHOT_CARGO_ENV}
+        "${CARGO_EXECUTABLE}" build ${MARK_SHOT_CARGO_ARGS} --package shot-ffi
         --manifest-path "${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml"
         --profile "${_cargo_profile}" ${_target_args}
     DEPENDS ${_rust_inputs} "${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml" "${CMAKE_CURRENT_SOURCE_DIR}/Cargo.lock"
