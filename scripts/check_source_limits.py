@@ -14,7 +14,12 @@ SUFFIXES = {".rs", ".cpp", ".h", ".c", ".js", ".py", ".qml", ".cmake", ".md", ".
 def source_files(root: Path):
     """遍历 root 下的维护文件并跳过构建产物，返回文件路径迭代器。"""
     for directory, names, files in os.walk(root):
-        names[:] = [name for name in names if name not in EXCLUDED_DIRS and not name.startswith("build")]
+        # 按名称跳过常见产物目录；任意命名的 CMake 构建树（如 Debian 的 obj-*）以 CMakeCache.txt 识别
+        names[:] = [
+            name for name in names
+            if name not in EXCLUDED_DIRS and not name.startswith("build")
+            and not (Path(directory) / name / "CMakeCache.txt").is_file()
+        ]
         for name in files:
             path = Path(directory) / name
             if path.suffix in SUFFIXES or name == "CMakeLists.txt":
