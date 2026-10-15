@@ -55,7 +55,13 @@ QHash<QString, std::weak_ptr<RecordingBackendLibrary>> &liveLibraries()
 RecordingBackendLibrary::RecordingBackendLibrary(const QString &path)
     : m_library(path)
 {
-    m_library.setLoadHints(QLibrary::ResolveAllSymbolsHint);
+    QLibrary::LoadHints hints = QLibrary::ResolveAllSymbolsHint;
+#ifdef Q_OS_WIN
+    // 【录制】【后端卸载】MSYS2 FFmpeg 依赖的 ggml 在静态初始化时安装 terminate 处理器，
+    // 卸载后再次加载会触发其断言并终止进程，Windows 下首次加载后保持常驻
+    hints |= QLibrary::PreventUnloadHint;
+#endif
+    m_library.setLoadHints(hints);
 }
 
 RecordingBackendLibrary::~RecordingBackendLibrary()
