@@ -62,6 +62,21 @@ class WindowsPackagingTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.app / "helper.dll").is_file())
 
+    def test_prefix_dependency_shadowing_system32_is_bundled(self) -> None:
+        """构建前缀提供的 DLL 即使在 System32 有同名旧版也必须随包发布，无返回值。"""
+        windir = self.root / "Windows"
+        (windir / "System32").mkdir(parents=True)
+        (windir / "System32/onnxruntime.dll").write_text("windows 1.17", encoding="utf-8")
+        (windir / "System32/VCRUNTIME140.dll").write_text("system only", encoding="utf-8")
+        self.exe.write_text("DLL Name: onnxruntime.dll\nDLL Name: VCRUNTIME140.dll\n", encoding="utf-8")
+        (self.prefix / "bin/onnxruntime.dll").write_text("DLL Name: KERNEL32.dll\n", encoding="utf-8")
+        self.env["WINDIR"] = str(windir)
+        result = self.deploy()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.app / "onnxruntime.dll").read_text(encoding="utf-8"),
+                         "DLL Name: KERNEL32.dll\n")
+        self.assertFalse((self.app / "VCRUNTIME140.dll").exists())
+
     def test_mismatched_minimal_ffmpeg_does_not_fall_back(self) -> None:
         """后端 ABI 与裁剪库不一致时禁止悄悄使用完整 FFmpeg，无返回值。"""
         self.exe.write_text("DLL Name: avcodec-62.dll\n", encoding="utf-8")

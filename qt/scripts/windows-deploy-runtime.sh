@@ -43,8 +43,13 @@ is_ffmpeg_dependency() {
 }
 
 # 判断参数名称是否由 Windows 提供，匹配时返回成功，不把未知 DLL 当系统库忽略
+# 构建前缀中存在的同名 DLL 必须随包发布：Windows 11 在 System32 自带旧版 onnxruntime.dll，
+# 若按系统库跳过，OCR 插件会加载到不兼容的系统版本
 is_system_dependency() {
   local name="${1,,}" system_dir
+  if [[ -n "${dependency_paths[$name]:-}" ]]; then
+    return 1
+  fi
   case "$name" in
     api-ms-*.dll|ext-ms-*.dll|kernel32.dll|kernelbase.dll|ntdll.dll|user32.dll|gdi32.dll|advapi32.dll|\
     shell32.dll|shlwapi.dll|ole32.dll|oleaut32.dll|comdlg32.dll|comctl32.dll|ws2_32.dll|winmm.dll|\
