@@ -32,5 +32,9 @@ override_dh_auto_install:
 		debian/mark-shot/usr/bin/mark-shot-window-detection-kde
 	rm -f debian/mark-shot/usr/share/doc/mark-shot/CHANGELOG.md
 
+# dh_clean 默认删除 *.orig，会破坏 vendor/ 中 crate 自带的 Cargo.toml.orig 及其校验和
+override_dh_clean:
+	dh_clean -Xvendor/
+
 override_dh_installchangelogs:
 	dh_installchangelogs qt/CHANGELOG.md
