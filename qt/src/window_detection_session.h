@@ -109,7 +109,13 @@ inline QString resolveBundledCommand(const QString &command, const QStringList &
             continue;
         }
         const QFileInfo file(QDir(directory).filePath(command));
-        if (file.isFile() && file.isExecutable()) {
+#if defined(Q_OS_WIN)
+        // Windows 用扩展名判断可执行，安装目录里的脚本没有 .exe 也要算找到
+        const bool runnable = file.isFile();
+#else
+        const bool runnable = file.isFile() && file.isExecutable();
+#endif
+        if (runnable) {
             return file.absoluteFilePath();
         }
     }

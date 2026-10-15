@@ -75,8 +75,10 @@ private slots:
         QVERIFY(file.open(QIODevice::WriteOnly));
         file.write("#!/bin/sh\n");
         file.close();
+#if !defined(Q_OS_WIN)
         QVERIFY(QFile::setPermissions(path,
                                       QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner));
+#endif
 
         QCOMPARE(markshot::window_detection::resolveBundledCommand(
                      QStringLiteral("mark-shot-window-detection-kde"), {dir.path()}),
