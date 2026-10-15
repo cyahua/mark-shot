@@ -1,4 +1,5 @@
 /.debhelper/
+/cargo-home/
 /debhelper-build-stamp
 /files
 /mark-shot/

@@ -3,6 +3,7 @@ Section: graphics
 Maintainer: Mark Shot maintainers <snemc@qq.com>
 Build-Depends:
  debhelper-compat (= 13),
+ cargo (>= 1.85),
  cmake (>= 3.20),
  libavcodec-dev,
  libavfilter-dev,
@@ -27,7 +28,9 @@ Build-Depends:
  python3,
  qt6-base-dev,
  qt6-base-dev-tools,
+ qt6-svg-dev,
  qt6-wayland-dev,
+ rustc (>= 1.85),
 Standards-Version: 4.7.3
 Homepage: https://github.com/jswysnemc/mark-shot
 Vcs-Browser: https://github.com/jswysnemc/mark-shot

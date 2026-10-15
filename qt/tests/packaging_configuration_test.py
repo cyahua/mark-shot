@@ -5,7 +5,8 @@ import re
 import unittest
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+QT_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = QT_ROOT.parent
 
 
 class PackagingConfigurationTest(unittest.TestCase):
@@ -18,7 +19,7 @@ class PackagingConfigurationTest(unittest.TestCase):
         @return 无返回值。
         """
         # 1. 读取 DEB 发布工作流
-        workflow = (PROJECT_ROOT / ".github/workflows/release-deb.yml").read_text(
+        workflow = (REPOSITORY_ROOT / ".github/workflows/release-deb.yml").read_text(
             encoding="utf-8"
         )
 
@@ -51,7 +52,7 @@ class PackagingConfigurationTest(unittest.TestCase):
         @return 无返回值。
         """
         # 1. 读取 AppImage 发布工作流
-        workflow = (PROJECT_ROOT / ".github/workflows/release-appimage.yml").read_text(
+        workflow = (REPOSITORY_ROOT / ".github/workflows/release-appimage.yml").read_text(
             encoding="utf-8"
         )
 
@@ -108,7 +109,7 @@ class PackagingConfigurationTest(unittest.TestCase):
 
         @return 无返回值。
         """
-        desktop_entry = (PROJECT_ROOT / "data/mark-shot.desktop.in").read_text(
+        desktop_entry = (QT_ROOT / "data/mark-shot.desktop.in").read_text(
             encoding="utf-8"
         )
 
@@ -121,8 +122,8 @@ class PackagingConfigurationTest(unittest.TestCase):
         @return 无返回值。
         """
         # 1. 从项目配置和变更日志首项读取发布版本与日期
-        cmake_config = (PROJECT_ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
-        changelog = (PROJECT_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        cmake_config = (REPOSITORY_ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+        changelog = (QT_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         version_match = re.search(
             r"project\(mark-shot VERSION (?P<version>[0-9]+\.[0-9]+\.[0-9]+) ",
             cmake_config,
@@ -140,8 +141,14 @@ class PackagingConfigurationTest(unittest.TestCase):
         self.assertEqual(version, release_match.group("version"))
 
         # 2. 验证项目配置与各打包清单使用同一版本
-        version_patterns = {
+        repository_patterns = {
             "flake.nix": rf'version = "{escaped_version}";',
+        }
+        for relative_path, pattern in repository_patterns.items():
+            with self.subTest(relative_path=relative_path):
+                content = (REPOSITORY_ROOT / relative_path).read_text(encoding="utf-8")
+                self.assertRegex(content, pattern)
+        version_patterns = {
             "packaging/aur/PKGBUILD": rf"(?m)^pkgver={escaped_version}$",
             "packaging/aur/.SRCINFO": rf"(?m)^\s*pkgver = {escaped_version}$",
             "packaging/aur_bin/PKGBUILD": rf"(?m)^pkgver={escaped_version}$",
@@ -155,16 +162,16 @@ class PackagingConfigurationTest(unittest.TestCase):
         }
         for relative_path, pattern in version_patterns.items():
             with self.subTest(relative_path=relative_path):
-                content = (PROJECT_ROOT / relative_path).read_text(encoding="utf-8")
+                content = (QT_ROOT / relative_path).read_text(encoding="utf-8")
                 self.assertRegex(content, pattern)
 
         # 3. 验证发布文档将本次版本放在首项
-        releases_en = (PROJECT_ROOT / "docs/releases.md").read_text(encoding="utf-8")
-        releases_zh = (PROJECT_ROOT / "docs/releases.zh-CN.md").read_text(
+        releases_en = (REPOSITORY_ROOT / "docs/releases.md").read_text(encoding="utf-8")
+        releases_zh = (REPOSITORY_ROOT / "docs/releases.zh-CN.md").read_text(
             encoding="utf-8"
         )
         metainfo = (
-            PROJECT_ROOT
+            QT_ROOT
             / "packaging/flatpak/io.github.jswysnemc.MarkShot.metainfo.xml"
         ).read_text(encoding="utf-8")
 
@@ -175,11 +182,11 @@ class PackagingConfigurationTest(unittest.TestCase):
         )
 
         # 4. 验证 AUR 源码地址指向本次标签或源码包
-        aur_srcinfo = (PROJECT_ROOT / "packaging/aur/.SRCINFO").read_text(
+        aur_srcinfo = (QT_ROOT / "packaging/aur/.SRCINFO").read_text(
             encoding="utf-8"
         )
         local_aur_srcinfo = (
-            PROJECT_ROOT / "packaging/local_aur/.SRCINFO"
+            QT_ROOT / "packaging/local_aur/.SRCINFO"
         ).read_text(encoding="utf-8")
         self.assertIn(f"#tag=v{version}", aur_srcinfo)
         self.assertIn(f"source = mark-shot-{version}.tar.gz", local_aur_srcinfo)

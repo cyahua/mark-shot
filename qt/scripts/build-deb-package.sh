@@ -59,7 +59,6 @@ rm -rf "$PACKAGE_DIR"
 cmake --install "$BUILD_DIR" --prefix "$INSTALL_DIR"
 install -Dm644 LICENSE "$PACKAGE_DIR/usr/share/doc/mark-shot/copyright"
 install -Dm644 README.md "$PACKAGE_DIR/usr/share/doc/mark-shot/README.md"
-install -Dm644 README.zh-CN.md "$PACKAGE_DIR/usr/share/doc/mark-shot/README.zh-CN.md"
 install -d "$CONTROL_DIR"
 
 # dpkg-shlibdeps expects debian/control. Keep the conventional in-tree source

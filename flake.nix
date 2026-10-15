@@ -48,11 +48,19 @@
 
           src = self;
 
+          # Rust 核心由 CMake 调用 cargo 构建；依赖按 Cargo.lock 预取，沙箱内离线编译
+          cargoDeps = pkgs.rustPlatform.importCargoLock {
+            lockFile = ./Cargo.lock;
+          };
+
           nativeBuildInputs = with pkgs; [
+            cargo
             cmake
             ninja
             pkg-config
             qt6.wrapQtAppsHook
+            rustPlatform.cargoSetupHook
+            rustc
           ];
 
           buildInputs = qtModules ++ [
@@ -62,6 +70,10 @@
             pkgs.pipewire
             pkgs.libxcb
           ];
+
+          preConfigure = ''
+            export CARGO_HOME="$TMPDIR/cargo-home"
+          '';
 
           cmakeFlags = [
             "-DCMAKE_BUILD_TYPE=Release"
@@ -93,10 +105,12 @@
 
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
+            cargo
             cmake
             ninja
             pkg-config
             gcc
+            rustc
           ];
 
           buildInputs = qtModules ++ [

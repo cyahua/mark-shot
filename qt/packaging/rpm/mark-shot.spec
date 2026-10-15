@@ -7,15 +7,19 @@ License:        MIT
 URL:            https://github.com/jswysnemc/mark-shot
 Source0:        %{name}-%{version}.tar.gz
 
+BuildRequires:  cargo >= 1.85
 BuildRequires:  cmake >= 3.20
 BuildRequires:  cmake-rpm-macros
 BuildRequires:  gcc-c++
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig
+BuildRequires:  rust >= 1.85
 BuildRequires:  cmake(Qt6Concurrent)
 BuildRequires:  cmake(Qt6Core)
 BuildRequires:  cmake(Qt6DBus)
 BuildRequires:  cmake(Qt6Gui)
+BuildRequires:  cmake(Qt6Network)
+BuildRequires:  cmake(Qt6Svg)
 BuildRequires:  cmake(Qt6Widgets)
 BuildRequires:  cmake(LayerShellQt)
 BuildRequires:  pkgconfig(libavcodec)

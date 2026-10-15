@@ -15,7 +15,7 @@ license=('MIT')
 depends=('qt6-base' 'qt6-svg' 'qt6-wayland' 'pipewire' 'grim' 'wl-clipboard' 'hicolor-icon-theme' 'python'
          'libavcodec.so' 'libavformat.so' 'libavutil.so' 'libavfilter.so' 'libswresample.so' 'libswscale.so')
 # x86_64：Arch 容器编译，声明 layer-shell-qt
-# aarch64：当前 CI 在 Ubuntu 22.04-arm 预编译，so 代际可能与 Arch aarch64 不一致；
+# aarch64：当前 CI 在 Ubuntu 24.04-arm 预编译，so 代际可能与 Arch aarch64 不一致；
 #          aarch64 用户优先安装源码包 mark-shot 在本机构建
 # depends_x86_64 在 depends 基础上追加，不是替换
 depends_x86_64=('layer-shell-qt')

@@ -3,6 +3,7 @@
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export PATH = /usr/sbin:/usr/bin:/sbin:/bin
 export QT_QPA_PLATFORM = offscreen
+export CARGO_HOME = $(CURDIR)/debian/cargo-home
 
 %:
 	dh $@ --buildsystem=cmake+ninja
@@ -11,6 +12,7 @@ override_dh_auto_configure:
 	dh_auto_configure -- \
 		-DBUILD_TESTING=ON \
 		-DCMAKE_INSTALL_LIBDIR=lib \
+		-DMARK_SHOT_CARGO_VENDOR_DIR=vendor \
 		-DMARK_SHOT_REQUIRE_FFMPEG=ON \
 		-DMARK_SHOT_REQUIRE_LAYER_SHELL=ON \
 		-DMARK_SHOT_REQUIRE_LIBPORTAL=ON \
@@ -31,4 +33,4 @@ override_dh_auto_install:
 	rm -f debian/mark-shot/usr/share/doc/mark-shot/CHANGELOG.md
 
 override_dh_installchangelogs:
-	dh_installchangelogs CHANGELOG.md
+	dh_installchangelogs qt/CHANGELOG.md

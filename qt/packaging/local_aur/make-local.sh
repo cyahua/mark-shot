@@ -3,7 +3,7 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "${script_dir}/../.." && pwd)"
+repo_root="$(cd "${script_dir}/../../.." && pwd)"
 pkgver="$(grep -E '^pkgver=' "${script_dir}/PKGBUILD" | cut -d= -f2)"
 pkgname="$(grep -E '^pkgname=' "${script_dir}/PKGBUILD" | cut -d= -f2)"
 archive="${script_dir}/${pkgname}-${pkgver}.tar.gz"
@@ -60,7 +60,7 @@ if [[ "${working_tree}" -eq 1 ]]; then
     # 2. 未跟踪但未被 ignore 的源码（新文件）
     while IFS= read -r -d '' path; do
         case "${path}" in
-            packaging/aur/*|packaging/local_aur/*|packaging/aur_bin/*|build/*|build-*/*|.git/*)
+            qt/packaging/aur/*|qt/packaging/local_aur/*|qt/packaging/aur_bin/*|build/*|build-*/*|target/*|vendor/*|.git/*)
                 continue
                 ;;
         esac

@@ -3,6 +3,8 @@ branch: stable
 runtime: org.kde.Platform
 runtime-version: '6.9'
 sdk: org.kde.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
 command: mark-shot
 
 finish-args:
@@ -37,21 +39,33 @@ modules:
   - name: mark-shot
     buildsystem: cmake-ninja
     builddir: true
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin
+      env:
+        CARGO_HOME: /run/build/mark-shot/cargo-home
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_INSTALL_PREFIX=/app
+      - -DMARK_SHOT_CARGO_VENDOR_DIR=vendor
       - -DMARK_SHOT_REQUIRE_FFMPEG=ON
       - -DMARK_SHOT_WITH_LAYER_SHELL=OFF
       - -DMARK_SHOT_WITH_LIBPORTAL=ON
     sources:
+      # vendor/ 由 scripts/packaging/vendor-rust-crates.sh 在构建前生成
       - type: dir
-        path: ../..
+        path: ../../..
+        skip:
+          - build
+          - target
+          - flatpak-build
+          - flatpak-repo
+          - .flatpak-builder
     post-install:
-      - install -Dm644 ../packaging/flatpak/io.github.jswysnemc.MarkShot.metainfo.xml /app/share/metainfo/io.github.jswysnemc.MarkShot.metainfo.xml
+      - install -Dm644 ../qt/packaging/flatpak/io.github.jswysnemc.MarkShot.metainfo.xml /app/share/metainfo/io.github.jswysnemc.MarkShot.metainfo.xml
       - mv /app/share/applications/mark-shot.desktop /app/share/applications/io.github.jswysnemc.MarkShot.desktop
       - desktop-file-edit --set-key=Icon --set-value=io.github.jswysnemc.MarkShot /app/share/applications/io.github.jswysnemc.MarkShot.desktop
       - desktop-file-edit --set-key=Exec --set-value=mark-shot /app/share/applications/io.github.jswysnemc.MarkShot.desktop
-      - install -Dm644 ../packaging/flatpak/io.github.jswysnemc.MarkShot.png /app/share/icons/hicolor/128x128/apps/io.github.jswysnemc.MarkShot.png
+      - install -Dm644 ../qt/packaging/flatpak/io.github.jswysnemc.MarkShot.png /app/share/icons/hicolor/128x128/apps/io.github.jswysnemc.MarkShot.png
       - rm -f /app/share/applications/mark-shot-edit.desktop
       - rm -f /app/share/icons/hicolor/scalable/apps/mark-shot.svg
       - rm -f /app/share/icons/hicolor/scalable/apps/mark-shot-edit.svg

@@ -5,7 +5,8 @@ import re
 import unittest
 
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+QT_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = QT_ROOT.parent
 FFMPEG_FLAG = "-DMARK_SHOT_REQUIRE_FFMPEG=ON"
 DEBIAN_DEVELOPMENT_PACKAGES = (
     "libavcodec-dev",
@@ -17,8 +18,13 @@ DEBIAN_DEVELOPMENT_PACKAGES = (
 
 
 def read_repository_file(relative_path: str) -> str:
-    """读取仓库内指定文本文件并返回内容。"""
+    """读取仓库根目录下的文本文件并返回内容。"""
     return (REPOSITORY_ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def read_qt_file(relative_path: str) -> str:
+    """读取 qt/ 目录下的打包文件并返回内容。"""
+    return (QT_ROOT / relative_path).read_text(encoding="utf-8")
 
 
 def workflow_job(relative_path: str, job_name: str) -> str:
@@ -83,13 +89,13 @@ class ReleaseFfmpegPolicyTest(unittest.TestCase):
 
     def test_package_manifests_require_ffmpeg(self) -> None:
         """验证 RPM、Nix、Flatpak 与 AUR 清单声明 FFmpeg。"""
-        rpm_spec = read_repository_file("packaging/rpm/mark-shot.spec")
+        rpm_spec = read_qt_file("packaging/rpm/mark-shot.spec")
         flake = read_repository_file("flake.nix")
-        flatpak = read_repository_file(
+        flatpak = read_qt_file(
             "packaging/flatpak/io.github.jswysnemc.MarkShot.yml"
         )
-        aur_bin = read_repository_file("packaging/aur_bin/PKGBUILD")
-        aur_source = read_repository_file("packaging/aur/PKGBUILD")
+        aur_bin = read_qt_file("packaging/aur_bin/PKGBUILD")
+        aur_source = read_qt_file("packaging/aur/PKGBUILD")
 
         for component in (
             "libavcodec",
