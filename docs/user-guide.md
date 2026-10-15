@@ -1,0 +1,500 @@
+# Mark Shot User Guide
+
+This manual covers day-to-day operation of Mark Shot, with a focus on the
+**window / UI-region hover selection** feature (moving the mouse automatically
+tracks and highlights the window, panel, or control under the cursor; a click
+selects it), the annotation workflow, headless capture, and configuration.
+
+> The docs in this repository are authored in the community fork and mirrored
+> to the upstream and enterprise repositories. The enterprise edition adds an
+> extra section for its local MCP server.
+
+---
+
+## 1. Quick Start
+
+### 1.1 Launching
+
+Start a region-capture session:
+
+```bash
+mark-shot
+```
+
+Press a desktop hotkey (see § 8) or run from a terminal. A frozen full-screen
+overlay opens on the focused display. Move the mouse to draw a selection
+rectangle, then release to enter the annotation editor.
+
+### 1.2 Portable builds
+
+If you use a portable bundle (`mark-shot-upstream`, `mark-shot-community`,
+`mark-shot-enterprise`), launch it with the bundled launcher so that the
+bundled Qt libraries, plugins, and helper scripts are found:
+
+```bash
+portable/mark-shot-community/bin/run-mark-shot.sh
+```
+
+The launcher prepends its `bin/` directory to `PATH`, which is required for the
+window-detection helper scripts (`mark-shot-window-detection-*`) and OCR /
+upload helpers.
+
+---
+
+## 2. Window / UI-Region Hover Selection
+
+While the selection overlay is open, **moving the mouse highlights the window,
+panel, or control under the cursor** with a teal frame. **A plain left click
+(no drag) selects the current highlight** as the capture region; you can then
+annotate, copy, pin, or save it directly.
+
+Hover candidates come from two layers:
+
+1. **Window detection**: top-level windows enumerated per compositor before the
+   overlay appears.
+2. **UI-region recognition**: after the overlay opens, a background analysis of
+   the frozen screenshot uses edges, color contrast, and layout cues to find
+   buttons, cards, and panels. You can still drag a region or click a window
+   while analysis is running. Window detection supplies the outer window only;
+   hover prefers controls inside that window and falls back to the window when
+   no control is found.
+
+The highlighted windows come from a per-compositor detection script that runs
+before the overlay appears:
+
+| Desktop | Detection source | Notes |
+| :--- | :--- | :--- |
+| GNOME Wayland | bundled `mark-shot-scroll-helper@snemc.org` Shell extension over D-Bus | requires the extension to be enabled (see § 2.1) |
+| KDE Plasma Wayland | one-shot KWin scripting via `qdbus6` / `qdbus` + journalctl | requires a KWin session |
+| Hyprland | `hyprctl -j clients` | |
+| niri | `niri msg -j windows` + config parsing | |
+| X11 | in-process XCB enumeration of `_NET_CLIENT_LIST_STACKING` | no script needed |
+| Windows | in-process `EnumWindows` | no script needed |
+
+Window detection tracks **top-level windows** only. Buttons, panels, and other
+widgets inside a window are filled in by UI-region recognition on the frozen
+screenshot; compositors do not need to expose widget geometry.
+
+### 2.1 GNOME Wayland: enable the helper extension
+
+```bash
+gnome-extensions enable mark-shot-scroll-helper@snemc.org
+```
+
+Verify the D-Bus helper answers:
+
+```bash
+gdbus call --session \
+  --dest org.gnome.Shell \
+  --object-path /org/gnome/Shell/Extensions/MarkShotScrollHelper \
+  --method org.gnome.Shell.Extensions.MarkShotScrollHelper.Version
+# -> ('5',)
+```
+
+If the call fails, log out and back in (or restart GNOME Shell on X11) and
+retry. Without the extension the GNOME helper script exits with an error and
+hover selection stays off (normal drag-selection still works).
+
+### 2.2 How to use it
+
+1. Trigger a capture (`mark-shot` or the desktop hotkey).
+2. Without pressing any mouse button, move the cursor over a window, panel, or
+   control. A teal frame outlines the region that would be selected.
+3. **Click once** (press and release without moving more than a few pixels) to
+   select the current highlight. If windows overlap, the topmost window at the
+   cursor wins; after UI-region recognition is ready, smaller controls and
+   panels are preferred.
+4. **Scroll up** expands to the parent region (control → panel → window →
+   full screen). **Scroll down** shrinks to the child under the cursor. In the
+   color-picker startup tool, the wheel still zooms the loupe; hold `Shift` to
+   zoom the selection loupe at any time.
+5. Release enters the annotation editor with the current region exactly framed.
+6. To make a **manual** region instead, simply drag a rectangle as usual — the
+   hover frame is ignored as soon as the drag exceeds the click threshold.
+
+The hover highlight is disabled while the Color Picker (`C`) or Ruler (`R`)
+startup tool is active, and remains available for Code Scanner (`Q`), display
+capture (`D`), and GIF / Video recording startup modes.
+
+### 2.3 Selecting windows on the correct monitor
+
+Window detection runs per capture target. On a multi-monitor setup, each
+frozen window receives only the windows intersecting its own geometry, so the
+hover frame matches what you see on that display.
+
+### 2.4 Enabling / disabling
+
+The feature is enabled by default (`windowDetection.enabled = true`). Toggle it
+in **Settings → Advanced → Window Detection Enabled**, or edit
+`~/.config/mark-shot/config.json`:
+
+```json
+{
+  "windowDetection": {
+    "enabled": true,
+    "command": "mark-shot-window-detection-gnome",
+    "timeoutMs": 1000,
+    "env": {}
+  }
+}
+```
+
+- `command`: the detection script. On GNOME / KDE / Hyprland / niri Wayland the
+  bundled `mark-shot-window-detection-*` script matching your session is chosen
+  automatically; on X11 and Windows the platform is enumerated in-process and
+  `command` may be left empty. **A user-supplied custom command (for example an
+  absolute path) is always respected.**
+- `timeoutMs`: maximum wait for the script (100–30000 ms, default 1000).
+- `env`: extra environment variables passed to the script. Per-compositor
+  tweaks (offsets) are documented in the script headers.
+
+### 2.5 Troubleshooting
+
+| Symptom | Check |
+| :--- | :--- |
+| No teal frame on GNOME Wayland | extension enabled? `gdbus` call above must return a version |
+| No teal frame on X11 / Windows | none — platform enumeration is built in; make sure the capture session is not using a startup pointer tool |
+| Hover frame picks the wrong (underneath) window | z-order data missing from a custom detection script; windows without `zOrder` are ranked as the bottom layer |
+| Capture starts slowly | the detection script runs before the overlay; raise `timeoutMs` only if the desktop is slow, or set `enabled:false` to skip it |
+| See diagnostics | run `mark-shot --debug --debug-log /tmp/mark-shot.log`; look for `window-detection` lines |
+
+---
+
+## 3. Region Selection & Startup Tools
+
+Before the region is committed you can use the startup overlay tools:
+
+| Hotkey | Tool | Behaviour |
+| :---: | :--- | :--- |
+| `C` | Color Picker | Sample a pixel; wheel resizes the loupe; left click opens a color panel (HEX / RGB / HSL / HSV / Qt formats); right click or `Esc` exits |
+| `R` | Ruler | Hover reads pixel coordinates; left-drag measures a rectangle with width, height, diagonal and area; right click or `Esc` exits |
+| `Q` | Code Scanner | Drag a region around a QR / barcode; the decoded result opens in a copyable window |
+| `D` | Display Capture | Captures all outputs, crops per display, shows hoverable thumbnails (copy / edit / save) |
+| `S` | Stop active GIF / video recording | stops the recording shown in the overlay |
+
+`Esc` cancels the session; right click (no startup tool) also cancels.
+
+An optional selection loupe is off by default. Enable it in
+**Settings → Capture → Selection Loupe**, or set
+`capture.selectionLoupe.enabled` to `true`. Arrow keys nudge the pointer by one
+pixel (Shift+arrow by ten). On Wayland, if the compositor cannot warp the
+system cursor, a software crosshair is drawn at the logical point and clicks
+follow that point. Outside the color picker, the mouse wheel cycles UI-region
+levels; hold `Shift` or use the color picker to resize the loupe.
+
+After selecting a region, use the Move tool to adjust it. Dragging its edges,
+corners, or interior also shows the enabled loupe. Arrow keys adjust the hovered
+edge or corner by one image pixel; away from a handle they move the whole region.
+Hold Shift for ten pixels. Arrow keys also work during a drag and remain available
+when the loupe is disabled.
+
+Hold `Shift` while dragging out a region to get a square. After selecting, press
+`Ctrl+R` to open the size panel: type an exact width and height (image pixels) or
+lock a 1:1, 4:3, 3:2, 16:9, 21:9, 3:4 or 9:16 ratio. While locked, dragging edges or
+corners keeps the ratio and the size badge shows it. The lock lasts for the current
+capture only.
+
+---
+
+## 4. Annotation Tools
+
+After a region is selected (or a local image is opened) the editor opens with
+the annotation toolbar. Tools are switched with the number keys or the toolbar:
+
+| Hotkey | Tool | Description |
+| :---: | :--- | :--- |
+| `V` | Move / Pan | move the whole selection, pan a local image canvas |
+| `S` | Select | select, move, scale, rotate, delete existing annotations |
+| `P` | Pen | smooth freehand strokes |
+| `L` | Line | straight lines |
+| `H` | Highlighter | semi-transparent marker; freehand or straight line style |
+| `R` | Rectangle | box with `Stroke` / `Highlight` / `Invert` / `Spotlight` styles, rounded corners; Spotlight dims everything outside the box |
+| `E` | Ellipse | ellipse / circle |
+| `A` | Arrow | fletched, KDE, or bidirectional heads with solid, dashed, or dotted shafts |
+| `T` | Text | rich text; wheel or sliders resize; diagonal handles scale both, side handles adjust wrap; exact pt size, font family, bold / italic in the font panel |
+| `N` | Number | sequential numbered markers (Arabic, alpha, roman, Chinese, …) |
+| `M` | Mosaic | switch between `Pixelate` / `Blur` / `Grayscale` / `Invert` / `Brighten` in the property panel; the wheel sets strength |
+| `G` | Laser | temporary strokes that dissolve automatically |
+
+Drawing tips:
+
+- Select an arrow and drag its middle skeleton point to bend it. `Arrow line style`
+  applies to straight and curved shafts without breaking the arrowheads.
+- Hold `Ctrl` while drawing a rectangle / ellipse to constrain to a square /
+  circle.
+- Scroll the wheel while a tool is active to adjust stroke width, text size,
+  number scale, or mosaic block size (live preview).
+- Under `Select`, scroll to zoom the canvas and hold the middle button to pan;
+  double-tap `Ctrl` to reset.
+
+### 4.1 Editing an existing annotation
+
+Switch to **Select** (`S`). Click an annotation to show its handles:
+
+- drag inside to move;
+- drag corner / edge handles to resize;
+- drag the round handle above the top edge to rotate;
+- press `Delete` / `Backspace` to remove;
+- double-click text to edit it in place.
+
+The property panel (right side) edits the selected annotation: color, width,
+style, text font family / size / bold / italic. Multiple annotations can be
+selected by dragging a selection box under the `Select` tool; the group can
+then be moved, resized, rotated and deleted together.
+
+### 4.2 Actions
+
+| Shortcut | Action |
+| :--- | :--- |
+| `Ctrl+C` | copy to clipboard |
+| `Ctrl+S` / `Enter` | save (path template from settings) |
+| `Ctrl+P` | pin as a floating sticker window |
+| `Ctrl+U` | upload to the configured image host; the returned URL is copied and remains after Mark Shot exits on Wayland |
+| `Ctrl+Z` / `Ctrl+Y` | undo / redo |
+| `F` | toggle the capture scope (selection ↔ full screen) |
+
+Double clicking an empty area inside the selection finishes the capture in one
+gesture, copying to the clipboard and closing by default. Pick another action in
+**Settings → Capture → Double Click Action**: do nothing, copy and close, save to
+the default folder, save as, pin to screen, or cancel the capture. Double
+clicking a text annotation still opens the inline editor.
+
+### 4.3 Export frame
+
+Enable **Settings → Storage → Screenshot Export Appearance → Mac-style Frame** to add transparent padding,
+rounded corners, and a soft shadow to saved / copied / uploaded images.
+
+---
+
+## 5. Pinned Window Stickers
+
+| Gesture / Shortcut | Behaviour |
+| :--- | :--- |
+| left-drag | reposition the sticker |
+| wheel | scale proportionally |
+| double left click / `Esc` | close |
+| right click | context menu (rotate, zoom, always-on-top, copy text, translate, save, copy, close) |
+
+OCR text inside a pinned window is selectable and copyable (`Ctrl+C` /
+context menu). Translation (OpenAI-compatible, Google Gemini, Anthropic
+Claude, Tencent, Baidu, or Youdao) renders the translated text back onto the
+image at the original layout positions. See the [translation provider guide](translation-providers.md) for
+provider selection and credentials.
+
+On KDE Plasma Wayland, `pinnedWindow.alwaysOnTop` is applied through a session
+KWin script so the sticker stays above other windows. The window remains a
+normal xdg-toplevel, so dragging and resizing are unchanged.
+
+The OCR result window opens with the editable recognized text. The **Text / Source image**
+tabs share one content area. When the recognized text lines up in rows and columns, a
+**Table** tab appears; cells are editable and **Copy** offers spreadsheet (TSV),
+Markdown, CSV and HTML formats. The image scales to fit the window; returning to text
+restores edits, undo history, scroll positions, and pane sizes. **Translate** in the
+top bar reveals the translation pane, with language and translation controls above
+the editors, then starts a translation with the saved language. Each pane has its own copy action and
+shows an undo action after editing. Copy feedback appears on the corresponding
+button. Wide windows show both panes side by side; narrow windows stack them.
+Drag the divider to adjust their space, or use the bottom-right grip to resize
+the window.
+
+A running translation can be canceled. **Hide translation** also cancels any
+pending request and retains the existing result. Editing the source or changing
+the target language marks the existing translation as out of date. `Ctrl+Enter` translates,
+`Ctrl+Shift+C` copies the full text of the focused editor, `Ctrl+C` copies the
+selection, and `Esc` closes the window. The window follows the configured light
+or dark interface theme.
+
+The separate OCR result window opens as a regular window by default, so niri can
+identify it with `niri msg pick-window` and apply window rules. Drag its title bar
+or use your window manager's move controls. Its pin button saves the independent
+`ocrResultWindow.alwaysOnTop` setting. On compositors that use layer-shell for
+always-on-top windows, enabling the pin makes the OCR window a layer surface;
+turn it off to restore normal window management.
+When entering layer-shell mode from a regular Wayland window, the OCR panel is
+centered on its current screen because Wayland does not expose the managed
+window's global position. Its title bar remains draggable in that mode.
+
+---
+
+## 6. Scrolling Screenshot
+
+1. Select a region (or use the floating drag handle for very large regions).
+2. The overlay scrolls the target window; captured frames are stitched into a
+   long image.
+3. GNOME Wayland requires the Mark Shot Scroll Helper extension (§ 2.1).
+
+When the selection contains a fixed sidebar such as a page outline or a PDF
+thumbnail pane, stitching compares only the scrolling content. Highlight
+changes in the sidebar while scrolling do not interrupt the capture.
+
+Scrolling capture is production-ready on niri and similar wlroots/Wayland
+compositors; on KDE, X11 and other stacks it is a test feature. If it fails,
+use normal screenshots or a custom extension command.
+
+On KDE Wayland, Mark Shot first tries available non-interactive capture paths,
+including native KWin screenshots. When screen-sharing permission is needed,
+it asks the desktop to remember the authorization. If the desktop supports and
+grants persistent permission, later scrolling captures on the same display can
+restore it, including after restarting Mark Shot. Closing the scrolling capture
+ends the sharing session. Revoked permissions, display changes, or desktops
+without persistence support may require confirmation again. Cancelling an
+authorization request does not open a second prompt through another portal API.
+
+---
+
+## 7. Headless Capture (CLI)
+
+Non-interactive capture writes a PNG and prints JSON:
+
+```bash
+# primary screen
+mark-shot --capture-to /tmp/shot.png
+
+# directory (timestamped file name)
+mark-shot --capture-to /tmp/shots/
+
+# region
+mark-shot --capture-to /tmp/r.png --region 0,0,1280,720
+
+# a specific display, with cursor
+mark-shot --capture-to /tmp/w.png --display DP-1 --include-cursor
+
+# several displays at once (one PNG each)
+mark-shot --capture-to /tmp/shots/ --display DP-1 --display DP-2
+
+# list outputs
+mark-shot --list-displays
+```
+
+All headless options are mutually exclusive with a positional image file.
+See the README for the full argument table.
+
+### 7.1 Delayed capture
+
+`--delay <seconds>` waits before capturing (0–60, decimals allowed). Use it to
+capture menus, tooltips or hover states that disappear when the capture hotkey
+is pressed.
+
+```bash
+# interactive capture after 3 seconds
+mark-shot --delay 3
+
+# headless capture after 1.5 seconds
+mark-shot --delay 1.5 --capture-to /tmp/shot.png
+```
+
+When an instance is already running, the delay is forwarded to it. A new
+delayed request replaces one that has not fired yet. The tray menu also has
+**Delayed Capture** with 3 / 5 / 10 second presets and a cancel entry.
+
+---
+
+## 8. Desktop Hotkeys & Tray
+
+Tray mode (`mark-shot --tray`) registers `Ctrl+Alt+S` for region capture and
+provides capture / screenshot history / recording / settings / quit menu entries. Desktop hotkeys:
+
+- **GNOME**: Settings → Keyboard → Shortcuts → Custom Shortcuts → bind to `mark-shot`.
+- **KDE**: custom shortcut bound to `mark-shot` (plus the KWin ScreenShot2
+  permission for exact KDE capture, see README).
+- **Hyprland**: `bind = SUPER SHIFT, S, exec, mark-shot` and `bind = , Print, exec, mark-shot`.
+- **niri**: `binds { Mod+Shift+S { spawn "mark-shot"; } }`.
+- **Sway / i3**: `bindsym Mod4+Shift+S exec mark-shot`.
+
+### 8.1 Screenshot history
+
+Open **Screenshot History** from the tray menu, run `mark-shot --history`, or
+press `Ctrl+H` in the capture overlay. Opening history from the overlay ends the
+current capture. History stores the image contents from successful Copy, Save,
+Save As, and Pin actions in the capture editor, including annotations and export
+effects. It is separate from selection-rectangle history.
+
+Select a thumbnail to preview it, then copy, edit, pin, save, or delete it.
+**Clear History** asks for confirmation and only removes the stored history
+copies; separately saved files remain. Copying, pinning, or saving directly from
+history does not create another entry. Editing and exporting it creates a new
+entry with the updated image.
+
+Automatic recording is enabled by default and can be turned off in the history
+window. The latest 50 screenshots are retained, with a total size limit of
+256 MiB; the oldest entries are removed as needed. `captureHistory.limit` sets
+the count from 1 to 200. Images persist across restarts in the application's
+`capture-history` data directory (`~/.local/share/mark-shot/capture-history` on
+Linux with the default XDG paths). Upload-only, OCR-only, display-picker, and
+headless captures do not add entries.
+
+### 8.2 Recording
+
+Open the recording dialog from the tray menu or a configured recording shortcut.
+Choose Video or GIF beside the title, then select a display or region. The main
+action reads **Select region** when a selection is needed and **Start recording**
+for an entire display. In Video mode, enable **Record audio** to choose an input.
+
+**Save to** shows the output file name; expand it to change the path. **Recording
+options** shows the current frame rate, format, and video quality; expand it for
+the detailed options, countdown, and capture backend. The window adjusts its height
+to fit expanded content. When screen space is limited, the options remain scrollable
+and the bottom actions stay visible. Switching between Video
+and GIF retains each mode's frame rate and the selected audio input. GIF hides
+audio and video-only controls. During recording, the compact control bar shows
+elapsed time and recording or paused status, with pause/resume and **Stop** actions.
+
+---
+
+## 9. Configuration & Backends
+
+Open **Settings** from the tray menu. Labels and fields align across groups; numeric
+and shortcut fields use compact widths, and switch captions sit next to their
+checkboxes. Narrow windows replace the sidebar with a category selector and place
+labels above fields. Long labels and switch captions wrap to fit. Advanced groups expand in place and retain their input when
+collapsed. **Save** applies changes without closing the window and reports the
+result in the footer. **Undo changes** restores the most recently saved values
+while keeping the current page open. Pressing `Enter` in a single-line text field saves
+changes and keeps the window open. Returning an option to its saved value clears
+the unsaved state.
+
+- Config file: `~/.config/mark-shot/config.json` (Linux), created on first run.
+- Full reference: [Configuration](configuration.md).
+- Backends: Wayland (PipeWire portal / grim / wlroots screencopy), X11
+  (`QScreen::grabWindow`), Windows (native WGC). Recording prefers the
+  PipeWire portal and falls back automatically.
+
+Optional helpers:
+
+```bash
+# OCR (RapidOCR / Tesseract)
+python3 -m venv ~/.local/share/mark-shot/ocr-venv
+~/.local/share/mark-shot/ocr-venv/bin/pip install -U pip rapidocr onnxruntime
+
+# Code scan (zxing-cpp)
+python3 -m venv ~/.local/share/mark-shot/code-scan-venv
+~/.local/share/mark-shot/code-scan-venv/bin/pip install -U pip zxing-cpp pillow
+```
+
+---
+
+## 10. Feature Testing Checklist
+
+Use this to verify a build end-to-end:
+
+1. **Launch** — `run-mark-shot.sh` opens the frozen overlay.
+2. **Window hover** — move the mouse over a window: teal frame follows; single
+   click selects the window; overlapping windows pick the topmost one.
+3. **Manual region** — drag a rectangle; release; editor opens.
+4. **Annotate** — draw with each tool (Pen, Line, Rectangle, Ellipse, Arrow,
+   Highlighter, Text, Number, Mosaic, Magnifier, Laser); undo/redo; Select to
+   move/resize/rotate/delete; double-click a text to edit.
+5. **Copy / Save / Pin / Upload** — `Ctrl+C`, `Ctrl+S`, `Ctrl+P`, `Ctrl+U`.
+6. **Startup tools** — `C` color picker, `R` ruler, `Q` code scan, `D` display
+   capture.
+7. **Headless** — `--capture-to`, `--region`, `--display`, `--list-displays`.
+8. **Tray + hotkey** — `mark-shot --tray`, press `Ctrl+Alt+S`.
+9. **Portable specifics** — bundle finds its own Qt libs/plugins/scripts.
+
+---
+
+## 11. Feedback
+
+Report issues with `gh issue create` using the bundled
+[issue submission guide](../.doc/submit-issue-via-gh.md). Attach a debug log
+captured with `mark-shot --debug --debug-log /tmp/mark-shot.log`.

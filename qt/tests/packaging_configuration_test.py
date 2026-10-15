@@ -123,7 +123,7 @@ class PackagingConfigurationTest(unittest.TestCase):
         """
         # 1. 从项目配置和变更日志首项读取发布版本与日期
         cmake_config = (REPOSITORY_ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
-        changelog = (QT_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        changelog = (REPOSITORY_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         version_match = re.search(
             r"project\(mark-shot VERSION (?P<version>[0-9]+\.[0-9]+\.[0-9]+) ",
             cmake_config,
