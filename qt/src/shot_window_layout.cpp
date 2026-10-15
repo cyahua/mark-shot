@@ -1,5 +1,7 @@
 #include "shot_window_module.h"
 
+#include <QCursor>
+
 namespace cfg = markshot::config;
 namespace shortcuts = markshot::shortcut;
 using namespace markshot::shot;
@@ -162,8 +164,16 @@ void ShotWindow::updateImageScrollBars()
     m_controls.m_verticalImageScrollBar->setValue(std::clamp(qRound(-m_frozenImageRect.top()), 0, maxY));
     m_syncingImageScrollBars = false;
 
-    m_controls.m_horizontalImageScrollBar->setVisible(showHorizontal);
-    m_controls.m_verticalImageScrollBar->setVisible(showVertical);
+    // 1. 【画布滚动条】【按需显示】内容超出视区时才存在，并且只在指针靠近边缘或正在拖动时出现
+    const QPoint pointer = mapFromGlobal(QCursor::pos());
+    const bool pointerInside = rect().contains(pointer);
+    const int revealDistance = kImageScrollBarExtent + 18;
+    const bool nearHorizontal = pointerInside && pointer.y() >= height() - revealDistance;
+    const bool nearVertical = pointerInside && pointer.x() >= width() - revealDistance;
+    m_controls.m_horizontalImageScrollBar->setVisible(
+        showHorizontal && (nearHorizontal || m_controls.m_horizontalImageScrollBar->isSliderDown()));
+    m_controls.m_verticalImageScrollBar->setVisible(
+        showVertical && (nearVertical || m_controls.m_verticalImageScrollBar->isSliderDown()));
     if (showHorizontal) {
         m_controls.m_horizontalImageScrollBar->raise();
     }
@@ -693,7 +703,9 @@ void ShotWindow::updatePropertyFontPanelGeometry()
     }
     const int rowCount = m_controls.m_propertyFontList ? m_controls.m_propertyFontList->count() : 1;
     const int rowHeight = m_controls.m_propertyFontList ? std::max(24, m_controls.m_propertyFontList->sizeHintForRow(0)) : 28;
-    const popup::FontPanelLayout layout = popup::fontPanelLayout(260, rowHeight, rowCount, controlsHeight, size());
+    const int searchHeight = m_controls.m_propertyFontSearch ? m_controls.m_propertyFontSearch->height() : 0;
+    const popup::FontPanelLayout layout = popup::fontPanelLayout(360, rowHeight, rowCount, controlsHeight, size(),
+                                                                 6, 6, searchHeight);
 
     // 2. 弹层以字体按钮为横向中心，纵向位于属性栏下方并保持 6-8px 间距
     const QPoint anchor = m_controls.m_propertyFontButton->mapTo(this, QPoint(m_controls.m_propertyFontButton->width() / 2, 0));

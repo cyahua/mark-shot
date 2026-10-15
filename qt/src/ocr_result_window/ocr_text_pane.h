@@ -60,6 +60,16 @@ public:
     /// @return 重新归属后的统计标签，由调用方加入状态栏布局
     QLabel *takeStatisticsLabel(QWidget *parent);
 
+    /// @brief 控制分区标题是否占用正文上方的一行
+    /// @param visible 为 false 时隐藏标题，复制按钮移走且没有撤销时整行收起
+    /// @return 无返回值
+    void setSectionTitleVisible(bool visible);
+
+    /// @brief 把复制按钮交给外部布局，原文页用来放到窗口标题栏
+    /// @param parent 新的父控件
+    /// @return 复制按钮，调用方负责加入布局
+    QPushButton *takeCopyButton(QWidget *parent);
+
 signals:
     /// @brief 请求窗口通过应用的剪贴板服务复制完整文本
     /// @param text 保留原始空白的完整文本
@@ -70,11 +80,16 @@ private:
     /// @return 无返回值
     void updateTextState();
 
+    /// @brief 标题、复制和撤销都离开后收起标题行，把高度还给编辑器
+    /// @return 无返回值
+    void updateHeaderVisibility();
+
     /// @brief 显示采用窗口主题的编辑菜单
     /// @param position 编辑器内部的菜单请求位置
     /// @return 无返回值
     void showEditorMenu(const QPoint &position);
 
+    QWidget *m_header = nullptr;
     QTextEdit *m_editor = nullptr;
     QPushButton *m_copyButton = nullptr;
     QPushButton *m_undoButton = nullptr;

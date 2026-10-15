@@ -36,6 +36,7 @@ struct FontPanelLayout {
  * @param available 窗口可用尺寸。
  * @param margin 弹层内边距。
  * @param spacing 列表与控件行之间的间距。
+ * @param headerHeight 列表上方搜索框高度，为 0 时不占位。
  * @return 弹层尺寸与分区矩形；列表区域位于控件行上方并留出 spacing 间距。
  */
 inline FontPanelLayout fontPanelLayout(int preferredWidth,
@@ -44,15 +45,18 @@ inline FontPanelLayout fontPanelLayout(int preferredWidth,
                                        int controlsHeight,
                                        QSize available,
                                        int margin = 6,
-                                       int spacing = 6)
+                                       int spacing = 6,
+                                       int headerHeight = 0)
 {
     // 1. 列表最多显示 10 行，至少保留 3 行可滚动高度
     constexpr int kMaxVisibleRows = 10;
     constexpr int kMinVisibleRows = 3;
     rowHeight = std::max(1, rowHeight);
     controlsHeight = std::max(0, controlsHeight);
+    headerHeight = std::max(0, headerHeight);
+    const int headerBlock = headerHeight > 0 ? headerHeight + spacing : 0;
     const int visibleRows = std::clamp(rowCount, 1, kMaxVisibleRows);
-    const int chromeHeight = margin * 2 + spacing + controlsHeight;
+    const int chromeHeight = margin * 2 + spacing + controlsHeight + headerBlock;
     const int preferredHeight = chromeHeight + visibleRows * rowHeight;
 
     // 2. 宽高受窗口可用区域约束，列表高度不得低于最小行数
@@ -61,13 +65,14 @@ inline FontPanelLayout fontPanelLayout(int preferredWidth,
                                    available.height() - kPopupEdgeMargin * 2);
     const int height = std::min(preferredHeight, maxHeight);
 
-    // 3. 控件行贴底，列表占据剩余高度
+    // 3. 搜索框贴顶，控件行贴底，列表占据中间剩余高度
     FontPanelLayout layout;
     layout.panelSize = QSize(width, height);
     const int innerWidth = std::max(0, width - margin * 2);
+    const int listTop = margin + headerBlock;
     layout.controlsRect = QRect(margin, height - margin - controlsHeight, innerWidth, controlsHeight);
-    const int listHeight = std::max(rowHeight, layout.controlsRect.top() - spacing - margin);
-    layout.listRect = QRect(margin, margin, innerWidth, listHeight);
+    const int listHeight = std::max(rowHeight, layout.controlsRect.top() - spacing - listTop);
+    layout.listRect = QRect(margin, listTop, innerWidth, listHeight);
     return layout;
 }
 

@@ -89,6 +89,7 @@ void OcrResultWindow::showToast(const QString &text, int durationMs)
 {
     m_statusLabel->setText(text);
     m_statusLabel->setToolTip(text);
+    m_statusLabel->setVisible(!text.isEmpty());
     m_statusTimer->start(durationMs);
 }
 

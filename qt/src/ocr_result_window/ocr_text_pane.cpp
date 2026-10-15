@@ -6,6 +6,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QEvent>
 #include <QBoxLayout>
 #include <QClipboard>
 #include <QLabel>
@@ -18,10 +19,35 @@
 #include <QTextDocument>
 #include <QTextEdit>
 #include <QTimer>
+#include <QScrollBar>
 
 namespace markshot::shot {
 
 namespace {
+
+/// @brief 正文滚动条默认隐藏，指针进入编辑区且内容超出时才显示
+class EditorScrollReveal final : public QObject {
+public:
+    explicit EditorScrollReveal(QTextEdit *editor) : QObject(editor), m_editor(editor) {}
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        Q_UNUSED(watched);
+        if (event->type() == QEvent::Enter) {
+            m_editor->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        } else if (event->type() == QEvent::Leave) {
+            const QScrollBar *bar = m_editor->verticalScrollBar();
+            if (!bar->isSliderDown() && !bar->underMouse()) {
+                m_editor->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+            }
+        }
+        return false;
+    }
+
+private:
+    QTextEdit *m_editor = nullptr;
+};
 
 /// @brief 标题行空间不足时收起辅助统计，避免显示截断文本
 class StatisticsLabel final : public QLabel {
@@ -48,26 +74,29 @@ OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidg
     setProperty("ocrPane", true);
     setMinimumSize(180, 112);
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 2, 0, 0);
-    layout->setSpacing(6);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(2);
     // 1. 【OCR】【分区高度】根据进度和提示的实际高度更新最小尺寸，避免挤压编辑器
     layout->setSizeConstraint(QLayout::SetMinimumSize);
 
-    // 2. 【OCR】【文本分区】将复制入口与所属文本放在同一分区
-    auto *header = new QHBoxLayout;
-    header->setSpacing(6);
-    m_titleLabel = new QLabel(title, this);
+    // 2. 【OCR】【文本分区】标题行可整行收起，原文页把复制按钮上移后不再占编辑区
+    m_header = new QWidget(this);
+    m_header->setObjectName(QStringLiteral("ocrPaneHeader"));
+    auto *header = new QHBoxLayout(m_header);
+    header->setSpacing(4);
+    header->setContentsMargins(2, 0, 0, 0);
+    m_titleLabel = new QLabel(title, m_header);
     m_titleLabel->setProperty("role", QStringLiteral("sectionTitle"));
-    m_titleLabel->setFont(markshot::theme::uiFont(10, QFont::DemiBold));
+    m_titleLabel->setFont(markshot::theme::uiFont(9, QFont::DemiBold));
     header->addWidget(m_titleLabel);
-    m_statistics = new StatisticsLabel(this);
+    m_statistics = new StatisticsLabel(m_header);
     m_statistics->setObjectName(QStringLiteral("ocrTextStatistics"));
     m_statistics->setProperty("role", QStringLiteral("muted"));
     m_statistics->setFont(markshot::theme::uiFont(9));
     m_statistics->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     header->addStretch(1);
     m_statistics->hide();
-    m_undoButton = new QPushButton(this);
+    m_undoButton = new QPushButton(m_header);
     m_undoButton->setObjectName(QStringLiteral("ocrUndoButton"));
     m_undoButton->setProperty("role", QStringLiteral("quiet"));
     m_undoButton->setFixedSize(28, 28);
@@ -75,16 +104,16 @@ OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidg
     m_undoButton->setToolTip(MS_TR("Undo edit") + QStringLiteral(" (Ctrl+Z)"));
     m_undoButton->hide();
     header->addWidget(m_undoButton);
-    m_copyButton = new QPushButton(MS_TR("Copy"), this);
+    m_copyButton = new QPushButton(MS_TR("Copy"), m_header);
     m_copyButton->setObjectName(QStringLiteral("ocrCopyButton"));
     m_copyButton->setProperty("role", QStringLiteral("quiet"));
-    m_copyButton->setFont(markshot::theme::uiFont(10));
-    m_copyButton->setMinimumWidth(68);
+    m_copyButton->setFont(markshot::theme::uiFont(9));
+    m_copyButton->setFixedHeight(22);
     m_copyButton->setIconSize(QSize(16, 16));
     m_copyButton->setToolTip(MS_TR("Copy all text"));
     m_copyButton->setAccessibleName(MS_TR("Copy %1").arg(title));
     header->addWidget(m_copyButton);
-    layout->addLayout(header);
+    layout->addWidget(m_header);
 
     // 3. 【OCR】【文本编辑】保持纯文本和原有换行，长行在窗口内自动折行
     m_editor = new QTextEdit(this);
@@ -95,11 +124,19 @@ OcrTextPane::OcrTextPane(const QString &title, const QString &placeholder, QWidg
     m_editor->setTabStopDistance(m_editor->fontMetrics().horizontalAdvance(QLatin1Char(' ')) * 4);
     m_editor->setWordWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
     m_editor->setMinimumSize(0, 28);
-    m_editor->document()->setDocumentMargin(4);
+    m_editor->document()->setDocumentMargin(2);
+    m_editor->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_editor->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    auto *scrollReveal = new EditorScrollReveal(m_editor);
+    m_editor->installEventFilter(scrollReveal);
+    m_editor->viewport()->installEventFilter(scrollReveal);
     m_editor->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_editor, &QTextEdit::customContextMenuRequested, this, &OcrTextPane::showEditorMenu);
     connect(m_editor, &QTextEdit::textChanged, this, &OcrTextPane::updateTextState);
-    connect(m_editor, &QTextEdit::undoAvailable, m_undoButton, &QWidget::setVisible);
+    connect(m_editor, &QTextEdit::undoAvailable, this, [this](bool available) {
+        m_undoButton->setVisible(available);
+        updateHeaderVisibility();
+    });
     connect(m_undoButton, &QPushButton::clicked, m_editor, &QTextEdit::undo);
     layout->addWidget(m_editor, 1);
 
@@ -194,6 +231,25 @@ QLabel *OcrTextPane::takeStatisticsLabel(QWidget *parent)
     m_statistics->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     m_statistics->show();
     return m_statistics;
+}
+
+void OcrTextPane::setSectionTitleVisible(bool visible)
+{
+    m_titleLabel->setVisible(visible);
+    updateHeaderVisibility();
+}
+
+QPushButton *OcrTextPane::takeCopyButton(QWidget *parent)
+{
+    m_copyButton->setParent(parent);
+    updateHeaderVisibility();
+    return m_copyButton;
+}
+
+void OcrTextPane::updateHeaderVisibility()
+{
+    const bool copyInside = m_copyButton->parentWidget() == m_header;
+    m_header->setVisible(!m_titleLabel->isHidden() || copyInside || !m_undoButton->isHidden());
 }
 
 void OcrTextPane::showEditorMenu(const QPoint &position)

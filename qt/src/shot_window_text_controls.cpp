@@ -1,5 +1,7 @@
 #include "shot_window_module.h"
 
+#include <QLineEdit>
+
 namespace {
 
 constexpr int kMinTextPointSize = 8;
@@ -25,7 +27,15 @@ void ShotWindow::initializePropertyFontPanel()
     // 列表与底部控件行之间保留固定间距，高度由 updatePropertyFontPanelGeometry 统一分配
     fontPanelLayout->setSpacing(6);
 
-    // 1. 创建字体系列列表
+    // 1. 搜索框按名称过滤，避免在整份字体列表里滚动查找
+    m_controls.m_propertyFontSearch = new QLineEdit(m_controls.m_propertyFontPanel);
+    m_controls.m_propertyFontSearch->setFixedHeight(kFontPanelControlHeight);
+    m_controls.m_propertyFontSearch->setClearButtonEnabled(true);
+    m_controls.m_propertyFontSearch->setPlaceholderText(MS_TR("Search fonts"));
+    m_controls.m_propertyFontSearch->setAccessibleName(MS_TR("Search fonts"));
+    fontPanelLayout->addWidget(m_controls.m_propertyFontSearch);
+
+    // 2. 创建字体系列列表
     m_controls.m_propertyFontList = new QListWidget(m_controls.m_propertyFontPanel);
     m_controls.m_propertyFontList->setFocusPolicy(Qt::NoFocus);
     m_controls.m_propertyFontList->setUniformItemSizes(true);
@@ -34,8 +44,17 @@ void ShotWindow::initializePropertyFontPanel()
     for (const QString &family : QFontDatabase::families()) {
         auto *item = new QListWidgetItem(family, m_controls.m_propertyFontList);
         item->setData(Qt::UserRole, family);
-        item->setFont(QFont(family, 12));
+        item->setToolTip(family);
+        item->setFont(QFont(family, 11));
     }
+    connect(m_controls.m_propertyFontSearch, &QLineEdit::textChanged, this, [this](const QString &query) {
+        const QString needle = query.trimmed();
+        for (int index = 0; index < m_controls.m_propertyFontList->count(); ++index) {
+            QListWidgetItem *item = m_controls.m_propertyFontList->item(index);
+            const QString family = item->data(Qt::UserRole).toString();
+            item->setHidden(!needle.isEmpty() && !family.contains(needle, Qt::CaseInsensitive));
+        }
+    });
     connect(m_controls.m_propertyFontList, &QListWidget::itemClicked, this, [this](QListWidgetItem *item) {
         if (!item) {
             return;
@@ -45,7 +64,7 @@ void ShotWindow::initializePropertyFontPanel()
     });
     fontPanelLayout->addWidget(m_controls.m_propertyFontList, 1);
 
-    // 2. 底部控件行：字号输入框与 B/I 按钮同排，固定高度，不参与列表伸缩
+    // 3. 底部控件行：字号输入框与 B/I 按钮同排，固定高度，不参与列表伸缩
     auto *fontStyleLayout = new QHBoxLayout;
     fontStyleLayout->setContentsMargins(0, 0, 0, 0);
     fontStyleLayout->setSpacing(4);
@@ -61,7 +80,7 @@ void ShotWindow::initializePropertyFontPanel()
     });
     fontStyleLayout->addWidget(m_controls.m_propertyFontSizeSpin, 1);
 
-    // 3. 创建粗体和斜体切换控件
+    // 4. 创建粗体和斜体切换控件
     m_controls.m_propertyFontBoldButton = new QToolButton(m_controls.m_propertyFontPanel);
     m_controls.m_propertyFontBoldButton->setFixedSize(kFontPanelControlHeight, kFontPanelControlHeight);
     m_controls.m_propertyFontBoldButton->setCheckable(true);

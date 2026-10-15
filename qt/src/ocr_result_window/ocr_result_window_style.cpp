@@ -32,6 +32,7 @@ QString ocrWindowStyleSheet(const QPalette &palette)
         "QPushButton:hover { background: %9; border-color: %5; }"
         "QPushButton:pressed { background: %10; }"
         "QPushButton:focus { border-color: %5; }"
+        "QPushButton#ocrCopyButton, QPushButton#ocrUndoButton { padding: 1px 8px; min-height: 0; }"
         "QPushButton[role=\"quiet\"] { background: transparent; border-color: transparent; }"
         "QPushButton[role=\"quiet\"]:hover { background: %9; border-color: %7; }"
         "QPushButton[role=\"quiet\"]:focus { border-color: %5; }"
@@ -74,9 +75,10 @@ QString ocrWindowStyleSheet(const QPalette &palette)
         "QSplitter::handle:hover { background: %10; border-radius: 3px; }"
         "QProgressBar#ocrTranslationProgress { background: %9; border: 0; border-radius: 1px; }"
         "QProgressBar#ocrTranslationProgress::chunk { background: %5; }"
-        "QScrollBar:vertical { background: transparent; width: 8px; margin: 1px; }"
-        "QScrollBar::handle:vertical { background: %7; border-radius: 3px; min-height: 24px; }"
-        "QScrollBar::handle:vertical:hover { background: %8; }"
+        "QScrollBar:vertical { background: transparent; width: 6px; margin: 2px; }"
+        "QScrollBar::handle:vertical { background: transparent; border-radius: 3px; min-height: 24px; }"
+        "QTextEdit:hover QScrollBar::handle:vertical,"
+        "QScrollBar::handle:vertical:hover { background: %7; }"
         "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }"
         "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }")
         .arg(palette.color(QPalette::Window).name(), palette.color(QPalette::Base).name(),

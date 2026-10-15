@@ -122,6 +122,22 @@ private slots:
         QTest::keyClicks(pane.editor(), " edited");
         QCOMPARE(pane.text(), QStringLiteral("result edited"));
     }
+
+    /// @brief 验证原文页可以去掉标题并把复制按钮交给标题栏，标题行不再占高度
+    /// @return 无返回值
+    void collapsesHeaderWhenTitleAndCopyLeave()
+    {
+        markshot::shot::OcrTextPane pane(QStringLiteral("Recognized"), {});
+        pane.setText(QStringLiteral("hello"));
+        QWidget host;
+        auto *copy = pane.takeCopyButton(&host);
+        pane.setSectionTitleVisible(false);
+        auto *header = pane.findChild<QWidget *>(QStringLiteral("ocrPaneHeader"));
+        QVERIFY(header);
+        QVERIFY(header->isHidden());
+        QCOMPARE(copy->parentWidget(), &host);
+        QVERIFY(!copy->text().isEmpty());
+    }
 };
 
 QTEST_MAIN(OcrTextPaneTest)

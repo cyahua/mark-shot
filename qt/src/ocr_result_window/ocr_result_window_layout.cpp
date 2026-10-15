@@ -29,8 +29,8 @@ void OcrResultWindow::initializeUi(const QString &text,
 {
     setFont(markshot::theme::uiFont(10));
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(12, 10, 12, 8);
-    layout->setSpacing(6);
+    layout->setContentsMargins(8, 6, 8, 4);
+    layout->setSpacing(4);
 
     // 1. 【OCR】【顶部操作】页面入口和翻译按钮共用标题栏，保留主要空间给内容
     m_titleBar = new QWidget(this);
@@ -40,7 +40,7 @@ void OcrResultWindow::initializeUi(const QString &text,
     titleLayout->setContentsMargins(0, 0, 0, 0);
     titleLayout->setSpacing(6);
     m_titleIcon = new QLabel(m_titleBar);
-    m_titleIcon->setFixedSize(22, 22);
+    m_titleIcon->setFixedSize(18, 18);
     m_titleIcon->setAccessibleName(MS_TR("Text Recognition"));
     m_titleIcon->setAttribute(Qt::WA_TransparentForMouseEvents);
     titleLayout->addWidget(m_titleIcon);
@@ -58,8 +58,8 @@ void OcrResultWindow::initializeUi(const QString &text,
     m_translationToggle->setObjectName(QStringLiteral("ocrTranslationToggle"));
     m_translationToggle->setProperty("role", QStringLiteral("icon"));
     m_translationToggle->setAccessibleName(MS_TR("Translate"));
-    m_translationToggle->setFixedSize(30, 30);
-    m_translationToggle->setIconSize(QSize(18, 18));
+    m_translationToggle->setFixedSize(26, 26);
+    m_translationToggle->setIconSize(QSize(16, 16));
     m_translationToggle->setCursor(Qt::PointingHandCursor);
     m_translationToggle->setCheckable(true);
     m_translationToggle->setFont(markshot::theme::uiFont(9));
@@ -81,8 +81,8 @@ void OcrResultWindow::initializeUi(const QString &text,
     m_closeButton->setToolTip(MS_TR("Close") + QStringLiteral(" (Esc)"));
     for (QPushButton *button : {m_moreButton, m_pinButton, m_closeButton}) {
         button->setProperty("role", QStringLiteral("icon"));
-        button->setFixedSize(30, 30);
-        button->setIconSize(QSize(18, 18));
+        button->setFixedSize(26, 26);
+        button->setIconSize(QSize(16, 16));
         button->setCursor(Qt::PointingHandCursor);
         titleLayout->addWidget(button);
     }
@@ -107,6 +107,12 @@ void OcrResultWindow::initializeUi(const QString &text,
     layout->addWidget(createTranslationActions());
     const bool hasSourceImage = !sourceImage.isNull();
     layout->addWidget(createContentViews(text, std::move(sourceImage), tokens), 1);
+    // 原文标题行去掉，复制按钮收到标题栏，正文从标题栏下沿开始
+    m_sourcePane->setSectionTitleVisible(false);
+    QPushButton *sourceCopy = m_sourcePane->takeCopyButton(m_titleBar);
+    sourceCopy->setFixedHeight(26);
+    sourceCopy->setCursor(Qt::PointingHandCursor);
+    titleLayout->insertWidget(titleLayout->indexOf(m_translationToggle), sourceCopy);
     // 标签顺序与页面堆叠顺序一致：文本、表格（可选）、原图（可选）
     if (m_tablePane) {
         m_viewTabs->addTab(MS_TR("Table"));
@@ -119,36 +125,33 @@ void OcrResultWindow::initializeUi(const QString &text,
 
     // 3. 【OCR】【操作反馈】底部仅保留轻量状态与尺寸入口
     auto *footer = new QHBoxLayout;
-    footer->setContentsMargins(0, 0, 0, 0);
+    footer->setContentsMargins(2, 0, 0, 0);
+    footer->setSpacing(4);
     m_statusLabel = new QLabel(this);
     m_statusLabel->setObjectName(QStringLiteral("ocrStatus"));
     m_statusLabel->setProperty("role", QStringLiteral("muted"));
     m_statusLabel->setFont(markshot::theme::uiFont(9));
     m_statusLabel->setTextFormat(Qt::PlainText);
     m_statusLabel->setWordWrap(true);
+    m_statusLabel->hide();
     footer->addWidget(m_statusLabel, 1);
-    // 4. 【OCR】【窗口统计】原文与译文各保留所属分区信息，字符数不再占用正文上方空间
+    // 4. 【OCR】【窗口统计】原文不再显示字符数；译文统计只在翻译栏打开时出现
     m_statisticsBar = new QWidget(this);
     m_statisticsBar->setObjectName(QStringLiteral("ocrStatisticsBar"));
     auto *statistics = new QHBoxLayout(m_statisticsBar);
     statistics->setContentsMargins(0, 0, 0, 0);
     statistics->setSpacing(6);
-    auto addStatistics = [this](OcrTextPane *pane, const QString &title) {
-        auto *group = new QWidget(m_statisticsBar);
-        auto *row = new QHBoxLayout(group);
-        row->setContentsMargins(0, 0, 0, 0);
-        row->setSpacing(3);
-        auto *label = new QLabel(title + QStringLiteral(":"), group);
-        label->setProperty("role", QStringLiteral("muted"));
-        label->setFont(markshot::theme::uiFont(9));
-        row->addWidget(label);
-        row->addWidget(pane->takeStatisticsLabel(group));
-        return group;
-    };
-    statistics->addWidget(addStatistics(m_sourcePane, MS_TR("Recognized")));
-    m_translationStatistics = addStatistics(m_translationPane, MS_TR("Translated text"));
+    m_translationStatistics = new QWidget(m_statisticsBar);
+    auto *translationRow = new QHBoxLayout(m_translationStatistics);
+    translationRow->setContentsMargins(0, 0, 0, 0);
+    translationRow->setSpacing(3);
+    auto *translationCaption = new QLabel(MS_TR("Translated text") + QStringLiteral(":"), m_translationStatistics);
+    translationCaption->setProperty("role", QStringLiteral("muted"));
+    translationCaption->setFont(markshot::theme::uiFont(9));
+    translationRow->addWidget(translationCaption);
+    translationRow->addWidget(m_translationPane->takeStatisticsLabel(m_translationStatistics));
     statistics->addWidget(m_translationStatistics);
-    m_translationStatistics->hide();
+    m_statisticsBar->hide();
     footer->addWidget(m_statisticsBar, 0, Qt::AlignRight | Qt::AlignBottom);
     auto *grip = new markshot::ui::WindowResizeGrip(this, [this] {
         return pinnedWindowHasLayerShellTop(this);
@@ -163,6 +166,7 @@ void OcrResultWindow::initializeUi(const QString &text,
     connect(m_statusTimer, &QTimer::timeout, this, [this] {
         m_statusLabel->clear();
         m_statusLabel->setToolTip(QString());
+        m_statusLabel->hide();
     });
 
     // 4. 【OCR】【键盘操作】保留编辑器复制语义及完整文本复制、翻译快捷键

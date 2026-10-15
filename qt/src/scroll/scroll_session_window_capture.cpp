@@ -155,7 +155,8 @@ void ScrollSessionWindow::captureTick()
         break;
     case StitchStatus::Appended:
         m_lastAppend = outcome.added;
-        m_statusText = MS_TR("Height %1 px").arg(stats.totalHeight);
+        // 长度改由状态行右侧常驻显示，左侧保持捕获状态
+        m_statusText = MS_TR("Capturing");
         break;
     case StitchStatus::NoProgress:
         m_statusText = MS_TR("Waiting for scroll");

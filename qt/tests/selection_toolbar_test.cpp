@@ -161,6 +161,12 @@ private slots:
         QCOMPARE(layout.controlsRect.bottom() + 1 + 6, layout.panelSize.height());
         QCOMPARE(layout.listRect.height(), 10 * 24);
 
+        // 搜索框占用列表上方的高度，列表仍然不与底部控件重叠
+        const popup::FontPanelLayout filtered = popup::fontPanelLayout(360, 24, 300, 26, QSize(1920, 1080), 6, 6, 28);
+        QVERIFY(!filtered.listRect.intersects(filtered.controlsRect));
+        QCOMPARE(filtered.listRect.top(), 6 + 28 + 6);
+        QCOMPARE(filtered.listRect.height(), 10 * 24);
+
         // 2. 窗口过矮时压缩列表而不是压到控件行
         const popup::FontPanelLayout compact = popup::fontPanelLayout(260, 24, 300, 26, QSize(400, 150));
         QVERIFY(!compact.listRect.intersects(compact.controlsRect));

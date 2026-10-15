@@ -298,7 +298,11 @@ void ScrollSessionWindow::updateGnomeShellPreview(bool force)
     const QImage result = currentResult();
     const bool horizontal = m_stitcher.axis() == ScrollAxis::Horizontal;
     const int totalLen = result.isNull() ? 0 : (horizontal ? result.width() : result.height());
-    const QString status = m_statusText.isEmpty() ? MS_TR("Scroll down to capture") : m_statusText;
+    QString status = m_statusText.isEmpty() ? MS_TR("Scroll down to capture") : m_statusText;
+    const QString metric = stitchedLengthLabel();
+    if (!metric.isEmpty()) {
+        status += QStringLiteral("    ") + metric;
+    }
 
     QDBusMessage message = QDBusMessage::createMethodCall(
         QString::fromLatin1(kGnomeShellService),

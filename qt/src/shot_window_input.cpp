@@ -12,6 +12,9 @@ using namespace markshot::shot;
 /// @return 无返回值
 void ShotWindow::mouseMoveEvent(QMouseEvent *event)
 {
+    if (imageNavigationAvailable()) {
+        updateImageScrollBars();
+    }
     if (m_imagePanning) {
         panImageTo(event->position());
         event->accept();

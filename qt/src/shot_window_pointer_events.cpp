@@ -58,6 +58,7 @@ bool ShotWindow::event(QEvent *event)
         clearWheelPreview();
         m_selectionPointerDetached = false;
         updatePointerCursor(QPointF(-1, -1));
+        updateImageScrollBars();
         update();
         break;
     case QEvent::Hide:

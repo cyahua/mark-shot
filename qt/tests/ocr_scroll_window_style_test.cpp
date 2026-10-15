@@ -83,6 +83,29 @@ private slots:
         QVERIFY(whitePixels > 10);
         QCOMPARE(image.pixelColor(210, 20), QColor("#1E1E1E"));
     }
+
+    /// @brief 验证拼接长度绘制在状态行右侧，不覆盖左侧状态文字
+    /// @return 无返回值
+    void paintsStitchedLengthOnTheRight()
+    {
+        QImage image(240, 80, QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        {
+            QPainter painter(&image);
+            markshot::scroll::drawScrollPreviewSurface(painter, image.rect());
+            markshot::scroll::drawScrollPreviewStatus(painter, QRect(12, 10, 216, 22),
+                                                      QStringLiteral("Waiting"), QStringLiteral("2400 px"));
+        }
+        QCOMPARE(image.pixelColor(16, 20), QColor("#2DD4BF"));
+        int rightWhite = 0;
+        for (int x = 180; x < 226; ++x) {
+            const QColor pixel = image.pixelColor(x, 21);
+            if (pixel.red() > 180 && pixel.green() > 180 && pixel.blue() > 180) {
+                ++rightWhite;
+            }
+        }
+        QVERIFY(rightWhite > 4);
+    }
 };
 
 QTEST_MAIN(OcrScrollWindowStyleTest)

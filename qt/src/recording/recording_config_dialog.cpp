@@ -10,6 +10,7 @@
 #include "recording/recording_display_source.h"
 #include "recording/recording_file_naming.h"
 #include "settings/settings_design_tokens.h"
+#include "settings/settings_ui_helpers.h"
 #include "ui/i18n.h"
 #include "ui/interface_theme_config.h"
 #include "ui/theme.h"
@@ -36,6 +37,9 @@ RecordingConfigDialog::RecordingConfigDialog(RecordingMode mode, QWidget *parent
     resize(480, 400);
     applyDialogTheme();
     buildLayout(persisted);
+    for (QComboBox *combo : findChildren<QComboBox *>()) {
+        markshot::settings::polishComboPopup(combo);
+    }
 }
 
 void RecordingConfigDialog::applyDialogTheme()

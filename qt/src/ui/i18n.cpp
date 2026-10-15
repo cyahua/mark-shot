@@ -165,6 +165,8 @@ const QHash<QString, QString> &chineseTable()
         {QStringLiteral("Fletched"), QStringLiteral("燕尾")},
         {QStringLiteral("KDE"), QStringLiteral("KDE")},
         {QStringLiteral("Text font"), QStringLiteral("文字字体")},
+        {QStringLiteral("Search fonts"), QStringLiteral("搜索字体")},
+        {QStringLiteral("Pin image"), QStringLiteral("置顶图片")},
         {QStringLiteral("Edit selected text"), QStringLiteral("编辑所选文字")},
 
         // Text editor.

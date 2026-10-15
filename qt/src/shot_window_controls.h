@@ -46,6 +46,7 @@ struct ShotWindowControls {
     QPushButton *m_propertyMagnifierShapeButton = nullptr;
     QPushButton *m_propertyFontButton = nullptr;
     QWidget *m_propertyFontPanel = nullptr;
+    QLineEdit *m_propertyFontSearch = nullptr;
     QListWidget *m_propertyFontList = nullptr;
     QSpinBox *m_propertyFontSizeSpin = nullptr;
     QToolButton *m_propertyFontBoldButton = nullptr;

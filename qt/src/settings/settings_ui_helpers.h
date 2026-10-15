@@ -98,6 +98,11 @@ QSpinBox *addSpinRow(QFormLayout *form, const QString &label, int minimum, int m
 /// @return 小数输入控件。
 QDoubleSpinBox *addDoubleRow(QFormLayout *form, const QString &label, double minimum, double maximum, int decimals);
 
+/// @brief 用自绘条目替换系统下拉列表，去掉单选圆点并统一行高与选中标记
+/// @param combo 需要调整弹出列表的下拉框
+/// @return 无返回值
+void polishComboPopup(QComboBox *combo);
+
 /// @brief 添加下拉选择表单项。
 /// @param form 表单布局。
 /// @param label 标签文本。

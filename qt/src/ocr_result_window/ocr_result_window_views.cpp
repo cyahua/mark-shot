@@ -165,7 +165,7 @@ void OcrResultWindow::setContentView(int index)
     m_viewTabs->setCurrentIndex(index);
     m_contentViews->setCurrentIndex(index);
     const bool textView = index == 0;
-    m_statisticsBar->setVisible(textView);
+    m_statisticsBar->setVisible(textView && m_translationToggle->isChecked());
     m_translationToggle->setVisible(textView);
     m_translationActions->setVisible(textView && m_translationToggle->isChecked());
     if (!textView) {
@@ -224,6 +224,7 @@ void OcrResultWindow::showTranslationPane()
     m_translationToggle->setToolTip(MS_TR("Hide translation"));
     m_translationActions->show();
     m_translationStatistics->show();
+    m_statisticsBar->show();
     if (m_translationPane->isHidden()) {
         // 2. 【OCR】【译文分栏】首次展开按新布局分配空间，不恢复收起时的零宽分栏
         m_textPaneSizes.clear();
@@ -245,6 +246,7 @@ void OcrResultWindow::toggleTranslationPane(bool visible)
     cancelTranslation();
     m_translationPane->hide();
     m_translationStatistics->hide();
+    m_statisticsBar->hide();
     m_translationActions->hide();
     m_translationToggle->setToolTip(MS_TR("Translate") + QStringLiteral(" (Ctrl+Enter)"));
 }

@@ -1,6 +1,7 @@
 #include "settings/settings_navigation.h"
 
 #include "settings/settings_design_tokens.h"
+#include "settings/settings_ui_helpers.h"
 #include "ui/i18n.h"
 #include "ui/theme.h"
 
@@ -276,6 +277,7 @@ SettingsNavigation::SettingsNavigation(QWidget *parent)
     for (int row : m_logicalRows) {
         m_compactSelector->addItem(m_list->item(row)->icon(), m_list->item(row)->text());
     }
+    polishComboPopup(m_compactSelector);
     layout->addWidget(m_compactSelector);
     m_compactSelector->hide();
     connect(m_compactSelector, &QComboBox::currentIndexChanged,

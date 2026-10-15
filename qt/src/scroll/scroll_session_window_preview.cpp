@@ -299,6 +299,15 @@ QImage ScrollSessionWindow::currentResult() const
     return m_stitcher.fullImage();
 }
 
+QString ScrollSessionWindow::stitchedLengthLabel() const
+{
+    const int length = m_stitcher.stats().totalHeight;
+    if (length <= 0) {
+        return {};
+    }
+    return QStringLiteral("%1 px").arg(length);
+}
+
 void ScrollSessionWindow::annotateResult()
 {
     const QImage result = currentResult();
@@ -412,7 +421,8 @@ void ScrollSessionWindow::paintEvent(QPaintEvent *)
                                panel.width() - kPanelPadding * 2,
                                kStatusHeight);
         drawScrollPreviewStatus(painter, statusRect,
-            m_statusText.isEmpty() ? MS_TR("Scroll down to capture") : m_statusText);
+            m_statusText.isEmpty() ? MS_TR("Scroll down to capture") : m_statusText,
+            stitchedLengthLabel());
 
         // Preview image area: between the status row and the control bar.
         const QRect imageArea = imageAreaRect();

@@ -565,6 +565,10 @@ void ShotWindow::toggleSelectedTextFontPanel()
     m_controls.m_propertyFontPanel->show();
     updatePropertyFontPanelGeometry();
     m_controls.m_propertyFontPanel->raise();
+    if (m_controls.m_propertyFontSearch) {
+        m_controls.m_propertyFontSearch->clear();
+        m_controls.m_propertyFontSearch->setFocus(Qt::OtherFocusReason);
+    }
 }
 
 void ShotWindow::applyPropertyColor(QColor color)

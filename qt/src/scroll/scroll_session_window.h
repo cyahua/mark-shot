@@ -107,6 +107,9 @@ private:
     bool updateAxisDrag(const QPoint &globalPos);
     bool finishAxisDrag();
     QImage currentResult() const;
+    /// @brief 返回沿滚动方向已经拼出的像素长度，尚无画面时为空
+    /// @return 形如 "2400 px" 的文本，或空字符串
+    QString stitchedLengthLabel() const;
     QRect captureBoundsGlobal() const;
     QRect floatingPanelGlobalRect() const;
     void updatePanelWindowGeometry();

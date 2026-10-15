@@ -7,6 +7,7 @@ class QCloseEvent;
 class QComboBox;
 class QKeyEvent;
 class QLabel;
+class QLineEdit;
 class QListWidget;
 class QPainter;
 class QPushButton;

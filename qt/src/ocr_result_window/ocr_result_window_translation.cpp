@@ -5,6 +5,7 @@
 #include "providers/provider_task.h"
 #include "providers/translate/translate_provider_factory.h"
 #include "shell_command.h"
+#include "settings/settings_ui_helpers.h"
 #include "translation_language_options.h"
 #include "ui/i18n.h"
 #include "ui/theme.h"
@@ -34,6 +35,7 @@ void OcrResultWindow::setupTargetLanguageCombo()
     m_targetLanguageCombo->setMinimumContentsLength(16);
     m_targetLanguageCombo->setToolTip(MS_TR("Target Language"));
     m_targetLanguageCombo->setAccessibleName(MS_TR("Target Language"));
+    markshot::settings::polishComboPopup(m_targetLanguageCombo);
 
     // 1. 【OCR】【目标语言】内置语言和手动输入共用规范化及持久化逻辑
     for (const markshot::TranslationLanguageOption &language : markshot::translationLanguageOptions()) {
