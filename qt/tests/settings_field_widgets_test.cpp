@@ -110,13 +110,20 @@ private slots:
     /// @return 无返回值
     void pathFieldKeepsCommandArguments()
     {
+#ifdef Q_OS_WIN
+        const QString programDirectory = QStringLiteral("C:/opt/ocr/bin");
+#else
+        const QString programDirectory = QStringLiteral("/opt/ocr/bin");
+#endif
+        const QString program = programDirectory + QStringLiteral("/run");
+        const QString expectedCommand = QDir::toNativeSeparators(program) + QStringLiteral(" {image} --lang zh");
         SettingsPathField command(SettingsPathField::Kind::Command, QStringLiteral("OCR"));
         command.lineEdit()->setText(QStringLiteral("mark-shot-ocr {image} --lang zh"));
-        command.applySelectedPath(QStringLiteral("/opt/ocr/bin/run"));
-        QCOMPARE(command.lineEdit()->text(), QStringLiteral("/opt/ocr/bin/run {image} --lang zh"));
-        QCOMPARE(command.dialogStartPath(), QStringLiteral("/opt/ocr/bin"));
+        command.applySelectedPath(program);
+        QCOMPARE(command.lineEdit()->text(), expectedCommand);
+        QCOMPARE(command.dialogStartPath(), programDirectory);
         command.applySelectedPath(QString());
-        QCOMPARE(command.lineEdit()->text(), QStringLiteral("/opt/ocr/bin/run {image} --lang zh"));
+        QCOMPARE(command.lineEdit()->text(), expectedCommand);
 
         SettingsPathField directory(SettingsPathField::Kind::Directory, QStringLiteral("Dir"));
         directory.lineEdit()->setText(QStringLiteral("~/Videos"));

@@ -40,7 +40,12 @@ CommandLineParts splitCommandProgram(const QString &commandLine)
 
 QString quoteCommandProgram(const QString &program)
 {
+#ifdef Q_OS_WIN
+    // 反斜杠是 Windows 路径分隔符，不触发引号
+    static const QString special = QStringLiteral(" \t'\"$`;&|<>()*?![]{}#");
+#else
     static const QString special = QStringLiteral(" \t'\"$`\\;&|<>()*?![]{}#");
+#endif
     bool needsQuote = program.isEmpty();
     for (const QChar ch : program) {
         if (special.contains(ch)) {
