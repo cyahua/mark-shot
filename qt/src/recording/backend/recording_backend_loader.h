@@ -14,11 +14,12 @@ public:
 
     /**
      * 【录制】【按需加载】从应用或安装目录加载后端，不搜索工作目录。
+     * 同一路径的并发租约共享一个加载句柄，最后一个租约释放时才卸载模块。
      * @param error 输出诊断信息。
      * @param path 显式库路径，留空时使用随应用安装的后端。
-     * @return 已校验版本的加载句柄，失败返回空。
+     * @return 已校验版本的共享加载句柄，失败返回空。
      */
-    static std::unique_ptr<RecordingBackendLibrary> load(QString *error, const QString &path = {});
+    static std::shared_ptr<RecordingBackendLibrary> load(QString *error, const QString &path = {});
 
     /** 返回后端函数表；仅在本加载句柄存活期间有效，无参数。 */
     const RecordingBackendApi &api() const;
@@ -26,6 +27,14 @@ public:
 private:
     /** 使用 path 创建尚未加载的库句柄，无返回值。 */
     explicit RecordingBackendLibrary(const QString &path);
+
+    /**
+     * 加载 path 指向的模块并校验函数表。
+     * @param error 输出诊断信息。
+     * @param path 已解析的绝对路径。
+     * @return 已校验版本的加载句柄，失败返回空。
+     */
+    static std::unique_ptr<RecordingBackendLibrary> loadVerified(QString *error, const QString &path);
 
     QLibrary m_library;
     const RecordingBackendApi *m_api = nullptr;

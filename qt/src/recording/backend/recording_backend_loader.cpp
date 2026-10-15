@@ -3,6 +3,9 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QHash>
+
+#include <mutex>
 
 namespace markshot::recording {
 namespace {
@@ -33,6 +36,20 @@ QString bundledBackendPath()
     return {};
 }
 
+/** 返回保护共享句柄表与模块加载卸载的互斥量，无参数。 */
+std::mutex &libraryMutex()
+{
+    static std::mutex mutex;
+    return mutex;
+}
+
+/** 返回按绝对路径记录的存活句柄表，无参数；调用者须持有 libraryMutex。 */
+QHash<QString, std::weak_ptr<RecordingBackendLibrary>> &liveLibraries()
+{
+    static QHash<QString, std::weak_ptr<RecordingBackendLibrary>> libraries;
+    return libraries;
+}
+
 }  // namespace
 
 RecordingBackendLibrary::RecordingBackendLibrary(const QString &path)
@@ -46,7 +63,7 @@ RecordingBackendLibrary::~RecordingBackendLibrary()
     m_library.unload();
 }
 
-std::unique_ptr<RecordingBackendLibrary> RecordingBackendLibrary::load(QString *error,
+std::shared_ptr<RecordingBackendLibrary> RecordingBackendLibrary::load(QString *error,
                                                                       const QString &path)
 {
     if (error) error->clear();
@@ -56,8 +73,31 @@ std::unique_ptr<RecordingBackendLibrary> RecordingBackendLibrary::load(QString *
         if (error) *error = QStringLiteral("Recording backend is not installed");
         return {};
     }
+    // 2. 【录制】【共享租约】复用同一路径的存活句柄，不依赖 QLibrary 跨实例的卸载计数
+    const std::lock_guard lock(libraryMutex());
+    auto &slot = liveLibraries()[resolved];
+    if (auto existing = slot.lock()) return existing;
+    auto loaded = loadVerified(error, resolved);
+    if (!loaded) {
+        liveLibraries().remove(resolved);
+        return {};
+    }
+    // 3. 【录制】【共享租约】最后一个租约在互斥量内卸载，避免与新的加载交错
+    std::shared_ptr<RecordingBackendLibrary> shared(loaded.release(), [resolved](RecordingBackendLibrary *library) {
+        const std::lock_guard lock(libraryMutex());
+        const auto entry = liveLibraries().constFind(resolved);
+        if (entry != liveLibraries().cend() && entry->expired()) liveLibraries().erase(entry);
+        delete library;
+    });
+    slot = shared;
+    return shared;
+}
+
+std::unique_ptr<RecordingBackendLibrary> RecordingBackendLibrary::loadVerified(QString *error,
+                                                                              const QString &resolved)
+{
     auto library = std::unique_ptr<RecordingBackendLibrary>(new RecordingBackendLibrary(resolved));
-    // 2. 【录制】【按需加载】立即解析全部导入，缺失依赖在录制开始前返回错误
+    // 1. 【录制】【按需加载】立即解析全部导入，缺失依赖在录制开始前返回错误
     if (!library->m_library.load()) {
         if (error) *error = library->m_library.errorString();
         return {};
@@ -66,7 +106,7 @@ std::unique_ptr<RecordingBackendLibrary> RecordingBackendLibrary::load(QString *
         library->m_library.resolve("markshot_recording_backend_v1"));
     library->m_api = entry ? entry() : nullptr;
     const auto *api = library->m_api;
-    // 3. 【录制】【接口校验】调用函数表前检查版本、尺寸和必需入口
+    // 2. 【录制】【接口校验】调用函数表前检查版本、尺寸和必需入口
     if (!api || api->version != RecordingBackendVersion || api->size != sizeof(RecordingBackendApi)
         || !api->create || !api->destroy) {
         if (error) *error = QStringLiteral("Recording backend version does not match the application");

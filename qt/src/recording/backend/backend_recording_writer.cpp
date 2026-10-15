@@ -24,7 +24,7 @@ bool ownError(bool result, QString *error)
 class BackendRecordingWriter final : public RecordingWriter {
 public:
     /** 接管 library 加载句柄与 writer 写出器，无返回值。 */
-    BackendRecordingWriter(std::unique_ptr<RecordingBackendLibrary> library, RecordingWriter *writer)
+    BackendRecordingWriter(std::shared_ptr<RecordingBackendLibrary> library, RecordingWriter *writer)
         : m_library(std::move(library)), m_writer(writer)
     {
     }
@@ -66,7 +66,7 @@ public:
     }
 
 private:
-    std::unique_ptr<RecordingBackendLibrary> m_library;
+    std::shared_ptr<RecordingBackendLibrary> m_library;
     RecordingWriter *m_writer;
 };
 
