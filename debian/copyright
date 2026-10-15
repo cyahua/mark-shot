@@ -7,7 +7,7 @@ Files: *
 Copyright: 2026 snemc and Mark Shot contributors
 License: MIT
 
-Files: protocols/wlr-screencopy-unstable-v1.xml
+Files: qt/protocols/wlr-screencopy-unstable-v1.xml
 Copyright: 2018 Simon Ser
            2019 Andri Yngvason
 License: MIT
