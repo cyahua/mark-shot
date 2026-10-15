@@ -78,6 +78,7 @@ jobs:
             build-essential \
             ca-certificates \
             cmake \
+            curl \
             desktop-file-utils \
             file \
             ffmpeg \
@@ -106,6 +107,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.version.outputs.checkout_ref }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Download AppImage tools
         shell: bash
@@ -137,7 +141,6 @@ jobs:
           DESTDIR="$APPDIR" cmake --install build
           install -Dm644 LICENSE "$APPDIR/usr/share/licenses/mark-shot/LICENSE"
           install -Dm644 README.md "$APPDIR/usr/share/doc/mark-shot/README.md"
-          install -Dm644 README.zh-CN.md "$APPDIR/usr/share/doc/mark-shot/README.zh-CN.md"
           sed -i -E 's#^Exec=[^ ]*/mark-shot( |$)#Exec=mark-shot\1#' \
             "$APPDIR"/usr/share/applications/*.desktop
 
@@ -150,8 +153,17 @@ jobs:
             echo "【Linux发布】【AppImage依赖】主程序意外直接链接 LayerShellQt" >&2
             exit 1
           fi
+          if ldd "$BINARY" | grep -E 'lib(av|sw)[a-z]+\.so'; then
+            echo "【Linux发布】【AppImage依赖】主程序不应直接链接 FFmpeg，录制后端按需加载" >&2
+            exit 1
+          fi
+          BACKEND="$(find "$PWD/AppDir/usr/lib" -path '*/mark-shot/recording/libmark-shot-recording-libav.so' -print -quit)"
+          if [ -z "$BACKEND" ]; then
+            echo "【Linux发布】【AppImage依赖】缺少 FFmpeg 录制后端" >&2
+            exit 1
+          fi
           for library in libavcodec libavfilter libavformat libavutil libswresample libswscale; do
-            ldd "$BINARY" | grep -F "$library"
+            ldd "$BACKEND" | grep -F "$library"
           done
 
       - name: Build AppImage
@@ -163,12 +175,17 @@ jobs:
         run: |
           set -euo pipefail
           APPDIR="$PWD/AppDir"
+          MODULE_DIRS=()
+          while IFS= read -r -d '' directory; do
+            MODULE_DIRS+=(--deploy-deps-only "$directory")
+          done < <(find "$APPDIR/usr/lib" -type d \( -path '*/mark-shot/recording' -o -path '*/mark-shot/plugins' \) -print0)
 
           ./linuxdeploy-x86_64.AppImage \
             --appdir "$APPDIR" \
             --executable "$APPDIR/usr/bin/mark-shot" \
+            "${MODULE_DIRS[@]}" \
             --desktop-file "$APPDIR/usr/share/applications/mark-shot.desktop" \
-            --icon-file data/icons/hicolor/scalable/apps/mark-shot.svg \
+            --icon-file qt/data/icons/hicolor/scalable/apps/mark-shot.svg \
             --plugin qt \
             --output appimage
 
@@ -189,6 +206,17 @@ jobs:
             echo "asset=$ASSET"
             echo "checksum=$ASSET.sha256"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Assert bundled recording dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          for library in libavcodec libavfilter libavformat libavutil libswresample libswscale; do
+            if ! find "$PWD/AppDir/usr/lib" -maxdepth 1 -name "${library}.so.*" -print -quit | grep -q .; then
+              echo "【Linux发布】【AppImage依赖】录制后端依赖 ${library} 未打包" >&2
+              exit 1
+            fi
+          done
 
       - name: Assert glibc compatibility
         shell: bash

@@ -70,6 +70,15 @@ jobs:
             --tool 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -y' \
             debian/control
 
+      # Launchpad 构建无网络，Rust crate 以 orig-vendor 组件随源码包上传
+      - name: Install Rust vendoring tool
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CARGO_HOME="$RUNNER_TEMP/cargo-tools"
+          cargo install --locked cargo-vendor-filterer@0.5.18
+          echo "$CARGO_HOME/bin" >> "$GITHUB_PATH"
+
       - name: Verify the canonical stable release
         id: release
         env:
@@ -123,13 +132,14 @@ jobs:
         run: |
           set -euo pipefail
           ORIG_TAR="$RUNNER_TEMP/mark-shot_${VERSION}.orig.tar.gz"
-          SOURCE_ROOT="$RUNNER_TEMP/mark-shot-${VERSION}"
           curl --fail --silent --show-error --location \
             "https://github.com/jswysnemc/mark-shot/archive/refs/tags/${UPSTREAM_TAG}.tar.gz" \
             --output "$ORIG_TAR"
-          mkdir -p "$SOURCE_ROOT"
-          tar -xzf "$ORIG_TAR" --strip-components=1 -C "$SOURCE_ROOT"
-          cp -a debian "$SOURCE_ROOT/"
+          SOURCE_ROOT="$(bash scripts/packaging/prepare-debian-source.sh \
+            --version "$VERSION" \
+            --output-dir "$RUNNER_TEMP" \
+            --orig-tarball "$ORIG_TAR" | sed -n 's/^source_root=//p')"
+          test -d "$SOURCE_ROOT/vendor"
 
           export DEBFULLNAME='Mark Shot community packaging automation'
           export DEBEMAIL='snemc@qq.com'
@@ -187,7 +197,7 @@ jobs:
           mkdir -p artifacts
           find "$RUNNER_TEMP" -maxdepth 1 -type f \
             \( -name "mark-shot_${DEBIAN_VERSION}*" \
-               -o -name 'mark-shot_*.orig.tar.*' \) \
+               -o -name 'mark-shot_*.orig*.tar.*' \) \
             -exec cp -v {} artifacts/ \;
 
       - name: Upload signed source artifacts

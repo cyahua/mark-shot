@@ -137,6 +137,7 @@ jobs:
             build-essential \
             ca-certificates \
             cmake \
+            curl \
             dpkg-dev \
             fakeroot \
             file \
@@ -155,6 +156,7 @@ jobs:
             pkg-config \
             qt6-base-dev \
             qt6-base-dev-tools \
+            qt6-svg-dev \
             qt6-wayland-dev
 
           # 1. Ubuntu 目标尝试启用 LayerShellQt（失败则保持关闭，不阻塞打包）
@@ -176,6 +178,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.version.outputs.checkout_ref }}
+
+      # 发行版自带 rustc 版本不一（Debian 12 为 1.63），统一安装满足 1.85 的稳定版
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Configure
         shell: bash
@@ -206,7 +212,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x scripts/build-deb-package.sh
+          chmod +x qt/scripts/build-deb-package.sh
           ARGS=(
             --build-dir build
             --version "${{ steps.version.outputs.version }}"
@@ -217,7 +223,7 @@ jobs:
           if [ "${{ matrix.compat_check }}" = "true" ]; then
             ARGS+=(--compat-check)
           fi
-          OUTPUT="$(./scripts/build-deb-package.sh "${ARGS[@]}")"
+          OUTPUT="$(./qt/scripts/build-deb-package.sh "${ARGS[@]}")"
           echo "$OUTPUT"
           ASSET="$(printf '%s\n' "$OUTPUT" | sed -n 's/^asset=//p' | tail -n1)"
           CHECKSUM="$(printf '%s\n' "$OUTPUT" | sed -n 's/^checksum=//p' | tail -n1)"

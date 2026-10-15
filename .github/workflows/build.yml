@@ -53,8 +53,7 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test
-        # 发布策略测试校验的打包文件尚未迁移到 qt/ 目录结构，常规构建暂不执行
-        run: QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure -E '^(packaging-configuration|release-ffmpeg-policy)$'
+        run: QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure
 
       - name: Install into artifact tree
         run: |
@@ -115,8 +114,7 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test
-        # 发布策略测试校验的打包文件尚未迁移到 qt/ 目录结构，常规构建暂不执行
-        run: QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure -E '^(packaging-configuration|release-ffmpeg-policy)$'
+        run: QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure
 
       - name: Install into artifact tree
         run: |
@@ -182,7 +180,7 @@ jobs:
         run: |
           cmake -DMODEL_DIRECTORY="$PWD/build/ocr-test-models" -P qt/scripts/download-ocr-test-models.cmake
           export MARK_SHOT_OCR_MODEL_DIR="$(cygpath -m "$PWD/build/ocr-test-models")"
-          ctest --test-dir build --output-on-failure -E '^(packaging-configuration|release-ffmpeg-policy)$'
+          ctest --test-dir build --output-on-failure
 
       - name: Install into artifact tree
         run: |
@@ -196,7 +194,7 @@ jobs:
 
       - name: Deploy runtime libraries
         run: |
-          bash qt/scripts/windows-deploy-runtime.sh "$PWD/app/bin" "$PWD/app/bin/mark-shot-rs.exe"
+          bash qt/scripts/windows-deploy-runtime.sh "$PWD/app/bin" "$PWD/app/bin/mark-shot.exe"
 
       - name: Sign Windows binaries
         shell: pwsh

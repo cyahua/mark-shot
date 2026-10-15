@@ -13,6 +13,10 @@ on:
         description: 'Release tag, for example v0.1.2'
         required: true
         type: string
+      checkout_ref:
+        description: 'Optional source ref for manual runs, for example dev'
+        required: false
+        type: string
       upload_to_release:
         description: 'Attach manual-run binary assets to the GitHub Release matching tag'
         required: false
@@ -42,15 +46,20 @@ jobs:
             exit 1
           fi
           VERSION="${TAG#v}"
+          CHECKOUT_REF="$TAG"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.checkout_ref }}" ]; then
+            CHECKOUT_REF="${{ inputs.checkout_ref }}"
+          fi
           {
             echo "tag=$TAG"
             echo "version=$VERSION"
+            echo "checkout_ref=$CHECKOUT_REF"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout release source
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.version.outputs.tag }}
+          ref: ${{ steps.version.outputs.checkout_ref }}
 
       - name: Install dependencies
         run: |
@@ -64,7 +73,9 @@ jobs:
             pipewire \
             protobuf \
             qt6-base \
+            qt6-svg \
             qt6-wayland \
+            rust \
             zxing-cpp \
             layer-shell-qt
 
@@ -87,7 +98,6 @@ jobs:
           cmake --install build --prefix "$PWD/app"
           install -Dm644 LICENSE app/share/licenses/mark-shot/LICENSE
           install -Dm644 README.md app/share/doc/mark-shot/README.md
-          install -Dm644 README.zh-CN.md app/share/doc/mark-shot/README.zh-CN.md
 
           ASSET="mark-shot-${{ steps.version.outputs.tag }}-linux-x86_64.tar.gz"
           tar -C app -czf "$ASSET" .
@@ -137,7 +147,8 @@ jobs:
 
   linux-arm64:
     name: Build Linux arm64 binary package
-    runs-on: ubuntu-22.04-arm
+    # ContextMenu 依赖 Qt 6.3+ 的 QWidget::addAction 重载，Ubuntu 22.04 仅提供 Qt 6.2
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Resolve tag
@@ -150,15 +161,20 @@ jobs:
             exit 1
           fi
           VERSION="${TAG#v}"
+          CHECKOUT_REF="$TAG"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.checkout_ref }}" ]; then
+            CHECKOUT_REF="${{ inputs.checkout_ref }}"
+          fi
           {
             echo "tag=$TAG"
             echo "version=$VERSION"
+            echo "checkout_ref=$CHECKOUT_REF"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout release source
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.version.outputs.tag }}
+          ref: ${{ steps.version.outputs.checkout_ref }}
 
       - name: Install dependencies
         run: |
@@ -174,11 +190,15 @@ jobs:
             libswresample-dev \
             libswscale-dev \
             libx11-xcb-dev \
+            libqt6svg6-dev \
             libxcb1-dev \
             ninja-build \
             pkg-config \
             qt6-base-dev \
             qt6-base-dev-tools
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Configure
         run: |
@@ -196,7 +216,6 @@ jobs:
           cmake --install build --prefix "$PWD/app"
           install -Dm644 LICENSE app/share/licenses/mark-shot/LICENSE
           install -Dm644 README.md app/share/doc/mark-shot/README.md
-          install -Dm644 README.zh-CN.md app/share/doc/mark-shot/README.zh-CN.md
 
           ASSET="mark-shot-${{ steps.version.outputs.tag }}-linux-arm64.tar.gz"
           tar -C app -czf "$ASSET" .
@@ -263,15 +282,20 @@ jobs:
             exit 1
           fi
           VERSION="${TAG#v}"
+          CHECKOUT_REF="$TAG"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.checkout_ref }}" ]; then
+            CHECKOUT_REF="${{ inputs.checkout_ref }}"
+          fi
           {
             echo "tag=$TAG"
             echo "version=$VERSION"
+            echo "checkout_ref=$CHECKOUT_REF"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout release source
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.version.outputs.tag }}
+          ref: ${{ steps.version.outputs.checkout_ref }}
 
       - name: Set up MSYS2
         uses: msys2/setup-msys2@v2
@@ -288,13 +312,17 @@ jobs:
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-onnxruntime
             mingw-w64-ucrt-x86_64-qt6-base
+            mingw-w64-ucrt-x86_64-qt6-svg
             mingw-w64-ucrt-x86_64-qt6-tools
+            mingw-w64-ucrt-x86_64-rust
             mingw-w64-ucrt-x86_64-zxing-cpp
 
+      # MSYS2 GCC 16.2 在 LTO 链接阶段触发内部编译器错误，Windows 构建暂时关闭 LTO
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DMARK_SHOT_RELEASE_LTO=OFF \
             -DMARK_SHOT_REQUIRE_FFMPEG=ON \
             -DMARK_SHOT_WITH_LAYER_SHELL=OFF \
             -DMARK_SHOT_WITH_LIBPORTAL=OFF
@@ -316,11 +344,10 @@ jobs:
           done
           install -Dm644 LICENSE app/share/licenses/mark-shot/LICENSE
           install -Dm644 README.md app/share/doc/mark-shot/README.md
-          install -Dm644 README.zh-CN.md app/share/doc/mark-shot/README.zh-CN.md
 
       - name: Deploy runtime libraries
         run: |
-          bash scripts/windows-deploy-runtime.sh "$PWD/app/bin" "$PWD/app/bin/mark-shot.exe"
+          bash qt/scripts/windows-deploy-runtime.sh "$PWD/app/bin" "$PWD/app/bin/mark-shot.exe"
 
       - name: Sign Windows binaries
         shell: pwsh
@@ -329,7 +356,7 @@ jobs:
           WINDOWS_CODESIGN_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_CERTIFICATE_PASSWORD }}
           WINDOWS_CODESIGN_TIMESTAMP_URL: ${{ vars.WINDOWS_CODESIGN_TIMESTAMP_URL }}
         run: |
-          ./scripts/windows-sign-artifact.ps1 -Path "$env:GITHUB_WORKSPACE/app"
+          ./qt/scripts/windows-sign-artifact.ps1 -Path "$env:GITHUB_WORKSPACE/app"
 
       - name: Package zip
         run: |

@@ -76,6 +76,7 @@ jobs:
       - name: Install build dependencies
         run: |
           dnf -y --setopt=install_weak_deps=False install \
+            cargo \
             cmake \
             cmake-rpm-macros \
             ffmpeg-free-devel \
@@ -87,9 +88,11 @@ jobs:
             pipewire-devel \
             pkgconf-pkg-config \
             qt6-qtbase-devel \
+            qt6-qtsvg-devel \
             qt6-qtwayland \
             redhat-rpm-config \
-            rpm-build
+            rpm-build \
+            rust
 
       - name: Build rpm package
         id: package
@@ -118,7 +121,7 @@ jobs:
             --exclude='./rpmbuild' \
             --transform "s|^\.$|$SOURCE_ROOT|;s|^\./|$SOURCE_ROOT/|" \
             -czf "$SOURCE_ARCHIVE" .
-          cp packaging/rpm/mark-shot.spec "$SPEC_FILE"
+          cp qt/packaging/rpm/mark-shot.spec "$SPEC_FILE"
           sed -i -E "s/^Version:.*/Version:        $VERSION/" "$SPEC_FILE"
 
           rpmbuild -ba \

@@ -48,8 +48,9 @@ jobs:
             runner: ubuntu-latest
             image: archlinux:base-devel
             platform: arch
+          # ContextMenu 依赖 Qt 6.3+ 的 QWidget::addAction 重载，Ubuntu 22.04 仅提供 Qt 6.2
           - arch: aarch64
-            runner: ubuntu-22.04-arm
+            runner: ubuntu-24.04-arm
             image: ''
             platform: ubuntu
 
@@ -96,8 +97,10 @@ jobs:
             pipewire \
             ffmpeg \
             qt6-base \
+            qt6-svg \
             qt6-wayland \
-            layer-shell-qt
+            layer-shell-qt \
+            rust
 
       - name: Install build dependencies (ubuntu)
         if: matrix.platform == 'ubuntu'
@@ -117,6 +120,7 @@ jobs:
             libavutil-dev \
             libpipewire-0.3-dev \
             libswresample-dev \
+            libqt6svg6-dev \
             libswscale-dev \
             libx11-xcb-dev \
             libxcb1-dev \
@@ -126,6 +130,10 @@ jobs:
             qt6-base-dev-tools \
             qt6-wayland-dev \
             zstd
+
+      - name: Install Rust toolchain (ubuntu)
+        if: matrix.platform == 'ubuntu'
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Configure (arch)
         if: matrix.platform == 'arch'
@@ -159,7 +167,6 @@ jobs:
           cmake --install build --prefix "$STAGE/usr"
           install -Dm644 LICENSE "$STAGE/usr/share/licenses/mark-shot/LICENSE"
           install -Dm644 README.md "$STAGE/usr/share/doc/mark-shot/README.md"
-          install -Dm644 README.zh-CN.md "$STAGE/usr/share/doc/mark-shot/README.zh-CN.md"
 
       - name: Build pacman package
         id: package
@@ -180,7 +187,7 @@ jobs:
 
           # 构造 .PKGINFO 元数据文件，pacman 解析此文件获取包信息
           # x86_64：Arch 容器构建，可声明 layer-shell-qt / ffmpeg
-          # aarch64：当前在 Ubuntu 22.04-arm 构建，so 代际与 Arch aarch64 可能不一致；
+          # aarch64：当前在 Ubuntu 24.04-arm 构建，so 代际与 Arch aarch64 可能不一致；
           #          包描述中标明来源，并建议 aarch64 用户优先使用源码包 mark-shot
           if [ "$PLATFORM" = "arch" ]; then
               LAYER_SHELL_DEP="depend = layer-shell-qt"
@@ -196,10 +203,10 @@ jobs:
           # 只声明裸包名时旧包仍然“满足”依赖检查却链接不上。
           # 这里按实际链接的 soname 生成 libavformat.so=62-64 形式的依赖，
           # 让 pacman 在库代际不匹配时直接拒绝安装。
-          chmod +x scripts/arch-soname-depends.sh
+          chmod +x qt/scripts/arch-soname-depends.sh
           # 单独捕获退出码：脚本失败时先打印安装树内容再退出，便于定位
           SONAME_STATUS=0
-          SONAME_OUTPUT="$(./scripts/arch-soname-depends.sh --root "$STAGE/usr" --filter '^lib(av|sw)')" \
+          SONAME_OUTPUT="$(./qt/scripts/arch-soname-depends.sh --root "$STAGE/usr" --filter '^lib(av|sw)')" \
               || SONAME_STATUS=$?
           if [ "$SONAME_STATUS" -ne 0 ] || [ -z "$SONAME_OUTPUT" ]; then
               echo "Failed to detect FFmpeg soname dependencies (exit ${SONAME_STATUS})" >&2
@@ -322,7 +329,7 @@ jobs:
           set -euo pipefail
           VERSION="${{ steps.version.outputs.version }}"
           mkdir -p aur-bin-work
-          cp packaging/aur_bin/PKGBUILD aur-bin-work/PKGBUILD
+          cp qt/packaging/aur_bin/PKGBUILD aur-bin-work/PKGBUILD
           sed -i "s/^pkgver=.*/pkgver=${VERSION}/" aur-bin-work/PKGBUILD
 
           # 回填 sha256 校验值，替换 PKGBUILD 中的 SKIP 占位符

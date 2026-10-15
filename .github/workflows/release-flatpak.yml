@@ -76,6 +76,15 @@ jobs:
             librsvg2-bin
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # flatpak-builder 构建期间无网络，提前生成只含 Linux crate 的 vendor/
+      - name: Vendor Rust crates
+        run: |
+          cargo install --locked cargo-vendor-filterer@0.5.18
+          bash scripts/packaging/vendor-rust-crates.sh
+
       - name: Build Flatpak bundle
         id: package
         shell: bash
@@ -86,10 +95,10 @@ jobs:
           rsvg-convert \
             -w 128 \
             -h 128 \
-            data/icons/hicolor/scalable/apps/mark-shot.svg \
-            -o packaging/flatpak/io.github.jswysnemc.MarkShot.png
+            qt/data/icons/hicolor/scalable/apps/mark-shot.svg \
+            -o qt/packaging/flatpak/io.github.jswysnemc.MarkShot.png
 
-          cd packaging/flatpak
+          cd qt/packaging/flatpak
           flatpak-builder \
             --user \
             --install-deps-from=flathub \

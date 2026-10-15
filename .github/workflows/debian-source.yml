@@ -44,6 +44,15 @@ jobs:
             --tool 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -y' \
             debian/control
 
+      # Launchpad 构建无网络，Rust crate 以 orig-vendor 组件随源码包上传
+      - name: Install Rust vendoring tool
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CARGO_HOME="$RUNNER_TEMP/cargo-tools"
+          cargo install --locked cargo-vendor-filterer@0.5.18
+          echo "$CARGO_HOME/bin" >> "$GITHUB_PATH"
+
       - name: Create source package from the checked-out revision
         id: source
         shell: bash
@@ -55,15 +64,11 @@ jobs:
           # 1. 【源码打包】【持续集成】验证当前提交，避免遗漏新改动或依赖尚未发布的标签
           SOURCE_REF="$(git rev-parse --verify HEAD)"
 
-          SOURCE_ROOT="$RUNNER_TEMP/mark-shot-${UPSTREAM_VERSION}"
-          ORIG_TAR="$RUNNER_TEMP/mark-shot_${UPSTREAM_VERSION}.orig.tar.gz"
-          git archive --format=tar.gz \
-            --prefix="mark-shot-${UPSTREAM_VERSION}/" \
-            --output="$ORIG_TAR" \
-            "$SOURCE_REF"
-          mkdir -p "$SOURCE_ROOT"
-          tar -xzf "$ORIG_TAR" --strip-components=1 -C "$SOURCE_ROOT"
-          cp -a debian "$SOURCE_ROOT/"
+          SOURCE_ROOT="$(bash scripts/packaging/prepare-debian-source.sh \
+            --version "$UPSTREAM_VERSION" \
+            --output-dir "$RUNNER_TEMP" \
+            --git-ref "$SOURCE_REF" | sed -n 's/^source_root=//p')"
+          test -d "$SOURCE_ROOT/vendor"
 
           (cd "$SOURCE_ROOT" && dpkg-buildpackage -S -us -uc)
           DSC="$(find "$RUNNER_TEMP" -maxdepth 1 -name "mark-shot_${DEBIAN_VERSION}.dsc" -print -quit)"

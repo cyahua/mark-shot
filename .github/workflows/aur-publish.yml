@@ -78,7 +78,7 @@ jobs:
       - name: Prepare AUR files
         run: |
           mkdir -p aur-work
-          cp packaging/aur/PKGBUILD aur-work/PKGBUILD
+          cp qt/packaging/aur/PKGBUILD aur-work/PKGBUILD
           sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.version }}/" aur-work/PKGBUILD
           sed -i "s/^pkgrel=.*/pkgrel=${{ steps.version.outputs.pkgrel }}/" aur-work/PKGBUILD
           if grep -q '^_commit=' aur-work/PKGBUILD; then
