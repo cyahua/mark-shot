@@ -17,6 +17,8 @@
 #include <QLibrary>
 #include <QPluginLoader>
 
+#include <algorithm>
+
 namespace markshot::providers {
 namespace {
 
@@ -71,6 +73,24 @@ QVector<ProviderPluginCapability> declaredCapabilities(const QPluginLoader &load
         }
     }
     return capabilities;
+}
+
+/**
+ * 读取元数据里声明的 provider 标识，不加载动态库。
+ * @param loader 插件加载器。
+ * @return 非空标识，未声明时为空。
+ */
+QStringList declaredProviderIds(const QPluginLoader &loader)
+{
+    QStringList ids;
+    const QJsonArray entries = pluginMetadata(loader).value(QStringLiteral("capabilities")).toArray();
+    for (const QJsonValue &entry : entries) {
+        const QString id = entry.toObject().value(QStringLiteral("providerId")).toString();
+        if (!id.isEmpty() && !ids.contains(id)) {
+            ids.append(id);
+        }
+    }
+    return ids;
 }
 
 /**
@@ -231,8 +251,25 @@ void ProviderPluginRegistry::loadCandidate(ProviderPluginCandidate *candidate)
     }
     candidate->attempted = true;
 
-    // 1. 加载候选动态库并检查是否实现任一 provider 接口
+    // 1. 同一 provider 只保留搜索顺序中的第一份。用户目录在前，后面的构建目录副本不再映射。
     QPluginLoader *loader = candidate->loader;
+    const QStringList declaredIds = declaredProviderIds(*loader);
+    const bool duplicate = !declaredIds.isEmpty()
+        && std::all_of(declaredIds.cbegin(), declaredIds.cend(), [this](const QString &id) {
+               return m_loadedProviderIds.contains(id);
+           });
+    if (duplicate) {
+        markshot::debugLog("providers",
+                           "【插件】【跳过重复】id=%s path=%s",
+                           declaredIds.join(QLatin1Char(',')).toUtf8().constData(),
+                           candidate->path.toUtf8().constData());
+        loader->unload();
+        loader->deleteLater();
+        candidate->loader = nullptr;
+        return;
+    }
+
+    // 2. 加载候选动态库并检查是否实现任一 provider 接口
     const ProviderPluginInfo baseInfo = basePluginInfo(candidate->path, *loader);
     QObject *instance = loadProviderPluginWithRuntimeFallback(loader);
     if (!instance) {
@@ -295,9 +332,33 @@ void ProviderPluginRegistry::loadCandidate(ProviderPluginCandidate *candidate)
                            candidate->path.toUtf8().constData());
     }
 
-    // 2. 与 provider 无关的插件立即卸载，避免占用内存
+    // 3. 元数据没写标识的旧插件，加载后再按运行时标识去重并卸载后到的副本
     if (matched) {
+        QStringList runtimeIds;
+        for (const ProviderPluginInfo &info : candidate->infos) {
+            if (!info.providerId.isEmpty() && !runtimeIds.contains(info.providerId)) {
+                runtimeIds.append(info.providerId);
+            }
+        }
+        const bool runtimeDuplicate = !runtimeIds.isEmpty()
+            && std::all_of(runtimeIds.cbegin(), runtimeIds.cend(), [this](const QString &id) {
+                   return m_loadedProviderIds.contains(id);
+               });
+        if (runtimeDuplicate) {
+            candidate->infos.clear();
+            markshot::debugLog("providers",
+                               "【插件】【跳过重复】id=%s path=%s",
+                               runtimeIds.join(QLatin1Char(',')).toUtf8().constData(),
+                               candidate->path.toUtf8().constData());
+            loader->unload();
+            loader->deleteLater();
+            candidate->loader = nullptr;
+            return;
+        }
         candidate->instance = instance;
+        for (const QString &id : declaredIds + runtimeIds) {
+            m_loadedProviderIds.insert(id);
+        }
         return;
     }
     ProviderPluginInfo info = baseInfo;

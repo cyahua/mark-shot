@@ -75,6 +75,13 @@ bool RapidRecModel::load(const QString &modelPath, const QString &dictionaryPath
     return true;
 }
 
+void RapidRecModel::release()
+{
+    m_session.release();
+    m_characters.clear();
+    m_characters.squeeze();
+}
+
 bool RapidRecModel::recognize(const QImage &lineImage, RapidRecResult *result, QString *error)
 {
     result->text.clear();

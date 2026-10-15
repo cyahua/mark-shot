@@ -2,6 +2,7 @@
 
 #include "providers/provider_plugin_info.h"
 
+#include <QSet>
 #include <QStringList>
 #include <QVector>
 
@@ -105,6 +106,7 @@ private:
     void loadCandidate(ProviderPluginCandidate *candidate);
 
     bool m_discovered = false;
+    QSet<QString> m_loadedProviderIds;
     QVector<ProviderPluginCandidate> m_candidates;
 };
 

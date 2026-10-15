@@ -32,6 +32,12 @@ public:
     bool load(const QString &modelPath, QString *error);
 
     /**
+     * 释放会话与运行时环境，把模型权重交还分配器。
+     * @return 无返回值。
+     */
+    void release();
+
+    /**
      * 执行单输入单输出推理。
      * @param input NCHW 浮点输入数据。
      * @param inputShape 输入形状。

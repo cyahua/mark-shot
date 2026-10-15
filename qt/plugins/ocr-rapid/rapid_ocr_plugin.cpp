@@ -115,12 +115,24 @@ bool RapidOcrPlugin::ensureLoaded(QString *error)
     return true;
 }
 
+void RapidOcrPlugin::releaseModels()
+{
+    m_detModel.release();
+    m_recModel.release();
+    m_loaded = false;
+}
+
 bool RapidOcrPlugin::recognize(const QImage &image,
                                QVector<markshot::plugin::OcrToken> *tokens,
                                QString *error)
 {
     tokens->clear();
     QMutexLocker locker(&m_mutex);
+    // 识别结束即释放会话。权重只在这一次推理期间常驻，下次识别再加载。
+    struct ReleaseModels {
+        RapidOcrPlugin *plugin;
+        ~ReleaseModels() { plugin->releaseModels(); }
+    } releaseModels{this};
     if (!ensureLoaded(error)) {
         return false;
     }

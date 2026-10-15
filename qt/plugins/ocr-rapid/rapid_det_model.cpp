@@ -124,6 +124,11 @@ bool RapidDetModel::load(const QString &modelPath, QString *error)
     return m_session.load(modelPath, error);
 }
 
+void RapidDetModel::release()
+{
+    m_session.release();
+}
+
 bool RapidDetModel::detect(const QImage &image, QVector<QRect> *boxes, QString *error)
 {
     boxes->clear();

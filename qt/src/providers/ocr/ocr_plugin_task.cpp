@@ -1,6 +1,7 @@
 #include "providers/ocr/ocr_plugin_task.h"
 
 #include "markshot/ocr_provider_plugin.h"
+#include "memory/process_memory_trim.h"
 
 #include <QImage>
 #include <QJsonArray>
@@ -80,10 +81,13 @@ void OcrPluginTask::start(int timeoutMs)
         }
         QVector<markshot::plugin::OcrToken> tokens;
         QString error;
-        if (!plugin->recognize(image, &tokens, &error)) {
+        const bool recognized = plugin->recognize(image, &tokens, &error);
+        // 2. 会话已释放，把这次推理留下的空闲堆页还给系统
+        markshot::memory::trimProcessMemoryWithLog();
+        if (!recognized) {
             return {false, TaskError::Failed, {}, error.toUtf8(), {}};
         }
-        // 2. 转换为与 helper 一致的 JSON 契约
+        // 3. 转换为与 helper 一致的 JSON 契约
         return {true, TaskError::None, tokensToJson(plugin->providerId(), tokens), {}, {}};
     }));
 }

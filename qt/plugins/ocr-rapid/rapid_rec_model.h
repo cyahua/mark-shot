@@ -40,6 +40,12 @@ public:
     bool load(const QString &modelPath, const QString &dictionaryPath, QString *error);
 
     /**
+     * 释放识别会话与字典。
+     * @return 无返回值。
+     */
+    void release();
+
+    /**
      * 识别单行文本图像。
      * @param lineImage 文本行图像。
      * @param result 输出识别结果。

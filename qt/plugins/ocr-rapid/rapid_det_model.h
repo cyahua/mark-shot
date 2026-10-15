@@ -25,6 +25,12 @@ public:
     bool load(const QString &modelPath, QString *error);
 
     /**
+     * 释放检测会话。
+     * @return 无返回值。
+     */
+    void release();
+
+    /**
      * 检测图像中的文本行区域。
      * @param image 输入图像。
      * @param boxes 输出文本行框（原图像素坐标，已按 unclip 比例外扩）。

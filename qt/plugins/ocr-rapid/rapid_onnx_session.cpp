@@ -81,6 +81,14 @@ bool RapidOnnxSession::load(const QString &modelPath, QString *error)
     }
 }
 
+void RapidOnnxSession::release()
+{
+    m_impl->session.reset();
+    m_impl->env.reset();
+    m_impl->inputName.clear();
+    m_impl->outputName.clear();
+}
+
 bool RapidOnnxSession::run(const QVector<float> &input,
                            const TensorShape &inputShape,
                            QVector<float> *output,
