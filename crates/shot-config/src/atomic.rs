@@ -100,6 +100,20 @@ pub(crate) fn replace(path: &Path, root: &Value) -> Result<()> {
     // 2. 【配置核心】【原子保存】完整写入并同步后再原子替换；失败由临时文件析构清理
     temporary.write_all(&encoded)?;
     temporary.as_file().sync_all()?;
-    temporary.persist(path).map_err(|error| error.error)?;
-    Ok(())
+    // 3. 【配置核心】【原子保存】Windows 下目标被其他句柄短暂打开时替换会被拒绝，限时重试
+    let started = Instant::now();
+    loop {
+        match temporary.persist(path) {
+            Ok(_) => return Ok(()),
+            Err(error)
+                if cfg!(windows)
+                    && error.error.kind() == std::io::ErrorKind::PermissionDenied
+                    && started.elapsed() < Duration::from_secs(2) =>
+            {
+                temporary = error.file;
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            Err(error) => return Err(error.error.into()),
+        }
+    }
 }
