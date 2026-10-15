@@ -479,9 +479,8 @@ void ShotWindow::initializeImageScrollBars()
     m_controls.m_verticalImageScrollBar = new QScrollBar(Qt::Vertical, this);
     m_controls.m_verticalImageScrollBar->setFocusPolicy(Qt::NoFocus);
     m_controls.m_verticalImageScrollBar->hide();
-    const QString imageScrollBarStyle = markshot::ui::canvasScrollBarStyleSheet(14);
-    m_controls.m_horizontalImageScrollBar->setStyleSheet(imageScrollBarStyle);
-    m_controls.m_verticalImageScrollBar->setStyleSheet(imageScrollBarStyle);
+    markshot::ui::setupCanvasScrollBar(m_controls.m_horizontalImageScrollBar, kImageScrollBarExtent);
+    markshot::ui::setupCanvasScrollBar(m_controls.m_verticalImageScrollBar, kImageScrollBarExtent);
     connect(m_controls.m_horizontalImageScrollBar, &QScrollBar::valueChanged, this, [this] {
         setImageCenterFromScrollBars();
     });
