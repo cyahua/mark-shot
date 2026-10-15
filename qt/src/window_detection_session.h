@@ -1,7 +1,10 @@
 #pragma once
 
+#include <QDir>
+#include <QFileInfo>
 #include <QProcessEnvironment>
 #include <QString>
+#include <QStringList>
 
 namespace markshot::window_detection {
 
@@ -88,6 +91,41 @@ inline QString defaultCommand(const Session &session)
     return session.wayland && !session.compositor.isEmpty()
         ? QStringLiteral("mark-shot-window-detection-") + session.compositor
         : QString();
+}
+
+/**
+ * 在给定目录中查找与可执行文件放在一起的内置窗口检测脚本。
+ * @param command 配置中的命令。
+ * @param directories 按顺序查找的目录，通常是应用程序所在目录。
+ * @return 找到可执行脚本时返回绝对路径，否则返回原命令。
+ */
+inline QString resolveBundledCommand(const QString &command, const QStringList &directories)
+{
+    if (!isBundledCommand(command)) {
+        return command;
+    }
+    for (const QString &directory : directories) {
+        if (directory.isEmpty()) {
+            continue;
+        }
+        const QFileInfo file(QDir(directory).filePath(command));
+        if (file.isFile() && file.isExecutable()) {
+            return file.absoluteFilePath();
+        }
+    }
+    return command;
+}
+
+/**
+ * 把单个路径包成 shell 单引号参数，避免安装路径含空格时被拆开。
+ * @param word 需要原样传给 shell 的路径或命令。
+ * @return 可放进 `sh -c` 的单个单词。
+ */
+inline QString quoteShellWord(const QString &word)
+{
+    QString escaped = word;
+    escaped.replace(QLatin1Char('\''), QStringLiteral("'\\''"));
+    return QLatin1Char('\'') + escaped + QLatin1Char('\'');
 }
 
 }  // namespace markshot::window_detection

@@ -7,6 +7,7 @@
 #include "shell_command.h"
 #include "window_detection_session.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
@@ -606,6 +607,33 @@ QProcessEnvironment scriptEnvironment(const QRect &captureGeometry,
     return environment;
 }
 
+/// @brief 内置脚本按名字启动时，先改用应用程序目录里的副本。
+/// @param command 配置中的窗口检测命令。
+/// @return 传给 shell 的命令；自定义命令保持原样。
+QString windowDetectionInvocation(const QString &command)
+{
+#if defined(Q_OS_WIN)
+    return command;
+#else
+    if (!window_detection::isBundledCommand(command)) {
+        return command;
+    }
+    const QString resolved = window_detection::resolveBundledCommand(
+        command, {QCoreApplication::applicationDirPath()});
+    if (resolved == command) {
+        markshot::debugLog("window-detection",
+                           "bundled script not found beside executable dir=%s command=%s",
+                           QCoreApplication::applicationDirPath().toUtf8().constData(),
+                           command.toUtf8().constData());
+        return command;
+    }
+    markshot::debugLog("window-detection",
+                       "bundled script resolved path=%s",
+                       resolved.toUtf8().constData());
+    return window_detection::quoteShellWord(resolved);
+#endif
+}
+
 } // namespace
 
 bool windowDetectionEnabled()
@@ -634,8 +662,9 @@ QVector<WindowInfo> collectConfiguredWindowInfos(const QRect &captureGeometry,
         return {};
     }
 
+    const QString command = windowDetectionInvocation(config->command);
     QProcess process;
-    setShellCommand(&process, config->command);
+    setShellCommand(&process, command);
     process.setProcessEnvironment(scriptEnvironment(captureGeometry,
                                                    outputName,
                                                    allOutputs,

@@ -1,5 +1,9 @@
 #include "window_detection_session.h"
 
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QTemporaryDir>
 #include <QtTest/QtTest>
 
 class WindowDetectionSessionTest final : public QObject {
@@ -56,6 +60,35 @@ private slots:
             QStringLiteral("mark-shot-window-detection-custom"), session));
         QVERIFY(markshot::window_detection::commandMatchesSession(
             QStringLiteral("/opt/tools/mark-shot-window-detection-niri"), session));
+    }
+
+    /**
+     * 验证内置脚本会改用应用程序目录中的可执行文件，自定义命令保持不变。
+     * @return 无返回值。
+     */
+    void bundledCommandResolvesBesideExecutable()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = QDir(dir.path()).filePath(QStringLiteral("mark-shot-window-detection-kde"));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("#!/bin/sh\n");
+        file.close();
+        QVERIFY(QFile::setPermissions(path,
+                                      QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner));
+
+        QCOMPARE(markshot::window_detection::resolveBundledCommand(
+                     QStringLiteral("mark-shot-window-detection-kde"), {dir.path()}),
+                 QFileInfo(path).absoluteFilePath());
+        QCOMPARE(markshot::window_detection::resolveBundledCommand(
+                     QStringLiteral("mark-shot-window-detection-kde"), {QStringLiteral("/missing")}),
+                 QStringLiteral("mark-shot-window-detection-kde"));
+        QCOMPARE(markshot::window_detection::resolveBundledCommand(
+                     QStringLiteral("/opt/custom-detector"), {dir.path()}),
+                 QStringLiteral("/opt/custom-detector"));
+        QCOMPARE(markshot::window_detection::quoteShellWord(QStringLiteral("/opt/Mark Shot/bin")),
+                 QStringLiteral("'/opt/Mark Shot/bin'"));
     }
 };
 
