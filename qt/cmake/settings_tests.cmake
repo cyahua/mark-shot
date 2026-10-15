@@ -74,6 +74,10 @@ target_compile_definitions(mark-shot-settings-field-widgets-test PRIVATE "$<TARG
 target_link_libraries(mark-shot-settings-field-widgets-test PRIVATE "$<TARGET_PROPERTY:mark-shot,LINK_LIBRARIES>" Qt6::Test)
 get_target_property(settings_field_test_standard mark-shot CXX_STANDARD)
 set_target_properties(mark-shot-settings-field-widgets-test PROPERTIES CXX_STANDARD ${settings_field_test_standard})
+if(WIN32)
+    # 【测试】【Windows 入口】同步主程序类型，为继承的 QT_NEEDS_QMAIN 定义链接 Qt 入口库
+    set_target_properties(mark-shot-settings-field-widgets-test PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
 add_dependencies(mark-shot-settings-field-widgets-test mark-shot)
 add_test(NAME settings-field-widgets COMMAND mark-shot-settings-field-widgets-test -o -,txt)
 set_tests_properties(settings-field-widgets PROPERTIES TIMEOUT 30

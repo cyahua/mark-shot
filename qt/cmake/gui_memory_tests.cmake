@@ -12,9 +12,10 @@ target_link_libraries(mark-shot-gui-memory-benchmark PRIVATE
 get_target_property(gui_memory_standard mark-shot CXX_STANDARD)
 set_target_properties(mark-shot-gui-memory-benchmark PROPERTIES
     CXX_STANDARD ${gui_memory_standard}
-    RUNTIME_OUTPUT_DIRECTORY "${MARK_SHOT_RUNTIME_DIR}"
-    WIN32_EXECUTABLE FALSE)
+    RUNTIME_OUTPUT_DIRECTORY "${MARK_SHOT_RUNTIME_DIR}")
 if(WIN32)
+    # 【测试】【Windows 入口】同步主程序类型，为继承的 QT_NEEDS_QMAIN 定义链接 Qt 入口库
+    set_target_properties(mark-shot-gui-memory-benchmark PROPERTIES WIN32_EXECUTABLE TRUE)
     target_link_libraries(mark-shot-gui-memory-benchmark PRIVATE psapi)
 endif()
 add_dependencies(mark-shot-gui-memory-benchmark mark-shot)

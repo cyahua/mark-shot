@@ -17,6 +17,10 @@ target_link_libraries(mark-shot-runtime-contract-test PRIVATE "$<TARGET_PROPERTY
 get_target_property(_app_standard mark-shot CXX_STANDARD)
 set_target_properties(mark-shot-runtime-contract-test PROPERTIES
     CXX_STANDARD ${_app_standard} RUNTIME_OUTPUT_DIRECTORY "${MARK_SHOT_RUNTIME_DIR}")
+if(WIN32)
+    # 【测试】【Windows 入口】同步主程序类型，为继承的 QT_NEEDS_QMAIN 定义链接 Qt 入口库
+    set_target_properties(mark-shot-runtime-contract-test PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
 add_dependencies(mark-shot-runtime-contract-test mark-shot mark-shot-translate-openai)
 add_test(NAME runtime-contract COMMAND mark-shot-runtime-contract-test)
 set_tests_properties(runtime-contract PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
