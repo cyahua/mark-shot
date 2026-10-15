@@ -148,16 +148,17 @@ void SettingsPagePlugins::buildMarketplaceCard(QVBoxLayout *layout)
     QFormLayout *form = settingsCardForm(card);
 
     auto *statusRow = new QWidget(card);
-    auto *statusLayout = new QHBoxLayout(statusRow);
+    // 按钮与状态文字上下排列，避免较宽字体在紧凑窗口中撑出横向滚动
+    auto *statusLayout = new QVBoxLayout(statusRow);
     statusLayout->setContentsMargins(0, 0, 0, 0);
-    statusLayout->setSpacing(10);
+    statusLayout->setSpacing(6);
     m_marketplaceFetch = new QPushButton(MS_TR("Fetch Plugin List"), statusRow);
     m_marketplaceFetch->setCursor(Qt::PointingHandCursor);
     m_marketplaceStatus = new QLabel(MS_TR("Plugin list has not been fetched yet."), statusRow);
     m_marketplaceStatus->setObjectName(QStringLiteral("pluginDiagnosticMeta"));
     m_marketplaceStatus->setWordWrap(true);
-    statusLayout->addWidget(m_marketplaceFetch, 0, Qt::AlignTop);
-    statusLayout->addWidget(m_marketplaceStatus, 1);
+    statusLayout->addWidget(m_marketplaceFetch, 0, Qt::AlignLeft);
+    statusLayout->addWidget(m_marketplaceStatus);
     form->addRow(statusRow);
 
     m_marketplaceListContainer = new QWidget(card);
@@ -355,16 +356,17 @@ void SettingsPagePlugins::buildOcrModelCard(QVBoxLayout *layout)
     QFormLayout *form = settingsCardForm(card);
 
     auto *statusRow = new QWidget(card);
-    auto *statusLayout = new QHBoxLayout(statusRow);
+    // 按钮与状态文字上下排列，避免较宽字体在紧凑窗口中撑出横向滚动
+    auto *statusLayout = new QVBoxLayout(statusRow);
     statusLayout->setContentsMargins(0, 0, 0, 0);
-    statusLayout->setSpacing(10);
+    statusLayout->setSpacing(6);
     m_ocrModelDownloadButton = new QPushButton(MS_TR("Download Models (~21 MB)"), statusRow);
     m_ocrModelDownloadButton->setCursor(Qt::PointingHandCursor);
     m_ocrModelStatus = new QLabel(statusRow);
     m_ocrModelStatus->setObjectName(QStringLiteral("pluginDiagnosticMeta"));
     m_ocrModelStatus->setWordWrap(true);
-    statusLayout->addWidget(m_ocrModelDownloadButton, 0, Qt::AlignTop);
-    statusLayout->addWidget(m_ocrModelStatus, 1);
+    statusLayout->addWidget(m_ocrModelDownloadButton, 0, Qt::AlignLeft);
+    statusLayout->addWidget(m_ocrModelStatus);
     form->addRow(statusRow);
 
     m_ocrModelDownloader = new markshot::marketplace::PluginAssetDownloader(this);
