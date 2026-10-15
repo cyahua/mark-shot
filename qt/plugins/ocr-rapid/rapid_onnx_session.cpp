@@ -11,7 +11,7 @@ namespace markshot::ocr_rapid {
 
 class RapidOnnxSession::Impl {
 public:
-    Ort::Env env{ORT_LOGGING_LEVEL_ERROR, "mark-shot-ocr-rapid"};
+    std::unique_ptr<Ort::Env> env;
     std::unique_ptr<Ort::Session> session;
     std::string inputName;
     std::string outputName;
@@ -35,26 +35,38 @@ bool RapidOnnxSession::load(const QString &modelPath, QString *error)
         }
         return false;
     }
+    // 1. 【OCR】【运行时校验】加载到旧版 ONNX Runtime 时接口表为空，提前报错而不是在构造环境时崩溃
+    if (!OrtGetApiBase()->GetApi(ORT_API_VERSION)) {
+        if (error) {
+            *error = QStringLiteral("ONNX Runtime %1 does not provide API version %2")
+                         .arg(QString::fromUtf8(OrtGetApiBase()->GetVersionString()))
+                         .arg(ORT_API_VERSION);
+        }
+        return false;
+    }
 
     try {
+        if (!m_impl->env) {
+            m_impl->env = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_ERROR, "mark-shot-ocr-rapid");
+        }
         Ort::SessionOptions options;
-        // 1. 推理线程数取物理核数一半，避免抢占 UI 与编码线程
+        // 2. 推理线程数取物理核数一半，避免抢占 UI 与编码线程
         const unsigned int threads = std::max(1u, std::thread::hardware_concurrency() / 2);
         options.SetIntraOpNumThreads(static_cast<int>(threads));
         options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
-        // 2. 检测输入尺寸随截图变化，CPU 内存池会按历史最大尺寸常驻，关闭后推理结束即释放
+        // 3. 检测输入尺寸随截图变化，CPU 内存池会按历史最大尺寸常驻，关闭后推理结束即释放
         options.DisableCpuMemArena();
         options.DisableMemPattern();
 
 #ifdef Q_OS_WIN
         const std::wstring nativePath = modelPath.toStdWString();
-        m_impl->session = std::make_unique<Ort::Session>(m_impl->env, nativePath.c_str(), options);
+        m_impl->session = std::make_unique<Ort::Session>(*m_impl->env, nativePath.c_str(), options);
 #else
         const QByteArray nativePath = QFile::encodeName(modelPath);
-        m_impl->session = std::make_unique<Ort::Session>(m_impl->env, nativePath.constData(), options);
+        m_impl->session = std::make_unique<Ort::Session>(*m_impl->env, nativePath.constData(), options);
 #endif
 
-        // 3. 缓存输入输出名，PP-OCR 模型均为单输入单输出
+        // 4. 缓存输入输出名，PP-OCR 模型均为单输入单输出
         Ort::AllocatorWithDefaultOptions allocator;
         m_impl->inputName = m_impl->session->GetInputNameAllocated(0, allocator).get();
         m_impl->outputName = m_impl->session->GetOutputNameAllocated(0, allocator).get();
