@@ -1,6 +1,8 @@
 #include "recording/recording_session_manager.h"
 
+#include "debug_log.h"
 #include "notifications/app_notifications.h"
+#include "recording/backend/recording_backend_loader.h"
 #include "recording/recording_controller.h"
 #include "recording/recording_display_source.h"
 
@@ -41,6 +43,13 @@ bool RecordingSessionManager::start(const RecordingOptions &options, QObject *pa
         }
     };
     [[maybe_unused]] StartGateLeave leaveGate{&m_startGate};
+
+    // 1. 【录制】【后端预检】采集开始前确认编码后端可加载，避免倒计时和采集超时后才报错
+    if (!RecordingBackendLibrary::load(error)) {
+        markshot::debugLog("recording", "【录制】【后端预检】failed error=%s",
+                           error ? error->toUtf8().constData() : "");
+        return false;
+    }
 
     RecordingOptions resolved = options;
     bindRegionRecordingDisplay(&resolved);

@@ -10,8 +10,12 @@
 namespace markshot::recording {
 namespace {
 
-/** 返回当前平台随应用部署的后端路径，无参数；未安装时返回空。 */
-QString bundledBackendPath()
+/**
+ * 返回当前平台随应用部署的后端路径；未安装时返回空
+ * @param searched 可选输出，记录按顺序检查过的候选文件
+ * @return 后端绝对路径或空字符串
+ */
+QString bundledBackendPath(QStringList *searched = nullptr)
 {
 #ifdef Q_OS_WIN
     const QString name = QStringLiteral("mark-shot-recording-libav.dll");
@@ -31,6 +35,9 @@ QString bundledBackendPath()
         const QFileInfo file(QDir(directory).filePath(name));
         if (file.isFile()) {
             return file.absoluteFilePath();
+        }
+        if (searched) {
+            searched->append(QDir::cleanPath(file.absoluteFilePath()));
         }
     }
     return {};
@@ -74,9 +81,14 @@ std::shared_ptr<RecordingBackendLibrary> RecordingBackendLibrary::load(QString *
 {
     if (error) error->clear();
     // 1. 【录制】【按需加载】仅查找明确的构建或安装位置，不使用当前工作目录
-    const QString resolved = path.isEmpty() ? bundledBackendPath() : QFileInfo(path).absoluteFilePath();
+    QStringList searched;
+    const QString resolved = path.isEmpty() ? bundledBackendPath(&searched) : QFileInfo(path).absoluteFilePath();
     if (resolved.isEmpty()) {
-        if (error) *error = QStringLiteral("Recording backend is not installed");
+        // 可执行文件被单独复制到其他目录时最常见，列出检查过的位置便于定位
+        if (error) {
+            *error = QStringLiteral("Recording backend is not installed (searched: %1)")
+                         .arg(searched.join(QStringLiteral(", ")));
+        }
         return {};
     }
     // 2. 【录制】【共享租约】复用同一路径的存活句柄，不依赖 QLibrary 跨实例的卸载计数
