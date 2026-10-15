@@ -26,7 +26,7 @@ class WindowsPackagingTest(unittest.TestCase):
         (self.prefix / "bin").mkdir(parents=True)
         self.app = self.root / "app" / "bin"
         self.app.mkdir(parents=True)
-        self.exe = self.app / "mark-shot-rs.exe"
+        self.exe = self.app / "mark-shot.exe"
         self.exe.write_text("DLL Name: KERNEL32.dll\n", encoding="utf-8")
         self.exe.chmod(0o755)
         self.tool("objdump", '#!/usr/bin/env bash\ncat "$2"\n')
@@ -110,6 +110,7 @@ class WindowsPackagingTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(archive.exists())
 
+    @unittest.skipUnless(shutil.which("zip"), "zip is not installed")
     def test_archive_only_preserves_staged_files(self) -> None:
         """归档阶段不能再次剥离或修改已签名文件，无返回值。"""
         archive = self.root / "release.zip"
@@ -120,7 +121,7 @@ class WindowsPackagingTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.exe.read_bytes(), original)
         with zipfile.ZipFile(archive) as bundle:
-            self.assertEqual(bundle.read("bin/mark-shot-rs.exe"), original)
+            self.assertEqual(bundle.read("bin/mark-shot.exe"), original)
 
     def test_unowned_stage_is_not_deleted(self) -> None:
         """部署不能清空调用者已有但不属于打包脚本的目录，无返回值。"""

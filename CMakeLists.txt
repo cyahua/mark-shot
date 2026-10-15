@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(mark-shot-rs VERSION 0.1.0 LANGUAGES C CXX)
+project(mark-shot VERSION 0.1.58 LANGUAGES C CXX)
 include(CTest)
 option(MARK_SHOT_BUILD_QT "Build the Qt desktop application" ON)
 include(cmake/release_optimization.cmake)
@@ -11,7 +11,8 @@ if(MARK_SHOT_BUILD_QT)
 endif()
 if(BUILD_TESTING)
     foreach(crate IN ITEMS shot-geometry shot-image shot-stitch shot-config shot-editor shot-ffi)
-        add_test(NAME rust-${crate} COMMAND "${CARGO_EXECUTABLE}" test --locked
+        add_test(NAME rust-${crate} COMMAND "${CMAKE_COMMAND}" -E env ${MARK_SHOT_CARGO_ENV}
+            "${CARGO_EXECUTABLE}" test ${MARK_SHOT_CARGO_ARGS}
             --manifest-path "${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml" -p ${crate})
         set_tests_properties(rust-${crate} PROPERTIES LABELS "rust;unit" TIMEOUT 180)
     endforeach()

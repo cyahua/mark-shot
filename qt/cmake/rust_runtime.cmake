@@ -3,8 +3,7 @@ set(MARK_SHOT_RUNTIME_DIR "${CMAKE_BINARY_DIR}")
 if(CMAKE_CONFIGURATION_TYPES)
     set(MARK_SHOT_RUNTIME_DIR "${CMAKE_BINARY_DIR}/$<CONFIG>")
 endif()
-set_target_properties(mark-shot PROPERTIES OUTPUT_NAME mark-shot-rs
-    RUNTIME_OUTPUT_DIRECTORY "${MARK_SHOT_RUNTIME_DIR}")
+set_target_properties(mark-shot PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${MARK_SHOT_RUNTIME_DIR}")
 if(TARGET mark-shot-layer-shell)
     set_target_properties(mark-shot-layer-shell PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY "${MARK_SHOT_RUNTIME_DIR}"

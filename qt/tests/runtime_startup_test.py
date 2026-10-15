@@ -54,7 +54,7 @@ def main() -> int:
         home = Path(temporary)
         environment = isolated_environment(home)
         version = invoke(binary, "--version", home, environment)
-        if not version.startswith("mark-shot-rs "):
+        if not version.startswith("mark-shot "):
             raise RuntimeError(f"unexpected application version output: {version!r}")
         help_text = invoke(binary, "--help", home, environment)
         for option in ("--help", "--version", "--capture-to", "--list-displays"):

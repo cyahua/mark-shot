@@ -1,0 +1,91 @@
+mark-shot (0.1.58-0ppa1~resolute1) resolute; urgency=medium
+
+  * Add UI-region hover detection on frozen screenshots.
+  * Support wheel cycling across nested region hierarchies.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Tue, 13 Oct 2026 00:47:46 +0900
+
+mark-shot (0.1.57-0ppa1~resolute1) resolute; urgency=medium
+
+  * Add dashed and dotted arrow shaft styles.
+  * Keep stitching scroll captures when selection includes fixed sidebars.
+  * Stop idle relayout loop from repainting the settings dialog.
+  * Fall back to bundled ONNX Runtime when system library conflicts.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Mon, 12 Oct 2026 01:51:38 +0900
+
+mark-shot (0.1.56-0ppa1~resolute1) resolute; urgency=medium
+
+  * Persist screen-sharing authorization across capture sessions and restarts.
+  * Recover KDE capture through KWin and stop repeated polling portal prompts.
+  * Isolate single-instance sockets by user runtime directory or UID.
+  * Preserve recording callbacks when libportal initialization falls back.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Fri, 02 Oct 2026 04:30:13 +0800
+
+mark-shot (0.1.55-0ppa1~resolute1) resolute; urgency=medium
+
+  * Add delayed capture CLI option and system tray presets.
+  * Support selection aspect ratio locks and exact size panel.
+  * Add Spotlight rectangle and selectable mosaic filter styles.
+  * Add editable OCR table view and multi-format export.
+  * Prevent repeated ScreenCast SelectSources prompts and stream UAF.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Wed, 30 Sep 2026 00:00:00 +0000
+
+mark-shot (0.1.54-0ppa1~resolute1) resolute; urgency=medium
+
+  * Add Google Gemini and Anthropic Claude translation provider plugins.
+  * Add a configurable system prompt for LLM translation providers.
+  * Use logical coordinates for the HiDPI capture crosshair hotspot.
+  * Register the portal shortcut app id on a dedicated D-Bus connection.
+  * Hide capture overlays on every screen while the recording dialog is open.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Fri, 25 Sep 2026 00:00:00 +0000
+
+mark-shot (0.1.53-0ppa1~resolute1) resolute; urgency=medium
+
+  * Stage plugin updates on Windows to prevent DLL overwrite locking conflicts.
+  * Trigger OCR on demand during the first text-selection gesture on pinned stickers.
+  * Align the screenshot history window with settings design tokens.
+  * Scale the capture crosshair cursor for HiDPI outputs.
+  * Unify OCR model directories and auto-refresh availability after downloads.
+  * Remove redundant Protobuf and Abseil dependencies from the RapidOCR plugin.
+  * Preserve native shell command quoting on Windows.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Mon, 21 Sep 2026 00:00:00 +0000
+
+mark-shot (0.1.52-0ppa1~resolute1) resolute; urgency=medium
+
+  * Redesign the OCR result window with separate text and translation panes.
+  * Streamline the recording dialog and settings form layouts.
+  * Scope the KDE pinned always-on-top KWin script to Mark Shot windows and
+    add native pinned resize with preserved aspect ratio.
+  * Stabilize Hyprland pinned image dragging with a live drag preview.
+  * Complete annotation interaction cursor states with width size preview.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Sun, 13 Sep 2026 00:00:00 +0000
+
+mark-shot (0.1.51-0ppa1~resolute1) resolute; urgency=medium
+
+  * Cache capture-path environment and D-Bus probes for smoother scroll capture.
+  * Add the shared translation extraBody request extension for
+    OpenAI-compatible APIs.
+  * Filter fully occluded windows in KDE window detection.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Sun, 06 Sep 2026 00:00:00 +0000
+
+mark-shot (0.1.50-0ppa1~resolute1) resolute; urgency=medium
+
+  * Add the Tencent, Baidu, and Youdao translation provider plugins.
+  * Add cloud translation credential fields to the integrations settings page.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Sun, 30 Aug 2026 00:00:00 +0000
+
+mark-shot (0.1.49-0ppa1~resolute1) resolute; urgency=medium
+
+  * Add conventional Debian source packaging for Ubuntu 26.04 Resolute.
+  * Enable the distro-provided FFmpeg, LayerShellQt, PipeWire, libportal,
+    ONNX Runtime, and ZXing integrations.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Mon, 24 Aug 2026 00:00:00 +0000

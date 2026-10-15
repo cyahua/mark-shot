@@ -100,7 +100,7 @@ FFmpeg、x264、Qt 及其他随包依赖的授权和对应源码提供要求。
 ```sh
 # Linux：不主动回收工作集，不依赖用户配置，不操作真实桌面
 uv run --no-project python scripts/performance/measure_idle_memory.py \
-  build-release/mark-shot-rs --assert-no-media
+  build-release/mark-shot --assert-no-media
 
 # Windows 暂存目录和实际压缩包体积，JSON 同时列出最大的文件
 python scripts/performance/report_package_size.py app-release \

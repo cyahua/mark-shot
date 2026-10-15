@@ -97,7 +97,7 @@ if [[ $ARCHIVE_ONLY -eq 0 ]]; then
     cmake --install "$BUILD_DIR" --config Release --prefix "$STAGE_DIR" --strip
 
     # 2. 复制 Qt 与原生依赖，再统一去掉符号表；MSYS2 预编译库已剥离时 strip 为空操作
-    bash "$script_dir/windows-deploy-runtime.sh" "$STAGE_DIR/bin" "$STAGE_DIR/bin/mark-shot-rs.exe"
+    bash "$script_dir/windows-deploy-runtime.sh" "$STAGE_DIR/bin" "$STAGE_DIR/bin/mark-shot.exe"
     find "$STAGE_DIR" -type f \( -iname '*.dll' -o -iname '*.exe' \) -exec strip --strip-unneeded {} +
     if [[ -n "${MARK_SHOT_FFMPEG_PREFIX:-}" ]]; then
         metadata="$MARK_SHOT_FFMPEG_PREFIX/share/mark-shot-ffmpeg"
@@ -114,8 +114,8 @@ if [[ $ARCHIVE_ONLY -eq 0 ]]; then
 fi
 
 if [[ -n "$ARCHIVE" ]]; then
-    if [[ ! -f "$STAGE_DIR/bin/mark-shot-rs.exe" ]]; then
-        echo "staged executable not found: $STAGE_DIR/bin/mark-shot-rs.exe" >&2
+    if [[ ! -f "$STAGE_DIR/bin/mark-shot.exe" ]]; then
+        echo "staged executable not found: $STAGE_DIR/bin/mark-shot.exe" >&2
         exit 1
     fi
     # 3. 归档：zip 使用最高压缩级别，7z 使用 LZMA2 固实压缩

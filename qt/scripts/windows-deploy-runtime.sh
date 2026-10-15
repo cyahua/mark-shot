@@ -8,7 +8,7 @@
 set -euo pipefail
 
 app_bin="${1:-$PWD/app/bin}"
-exe="${2:-$app_bin/mark-shot-rs.exe}"
+exe="${2:-$app_bin/mark-shot.exe}"
 app_root="$(dirname "$app_bin")"
 mingw_bin="${MINGW_PREFIX:-/ucrt64}/bin"
 

@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
     markshot::ui::installInteractionCursorPolicy(&app);
-    QApplication::setApplicationName(QStringLiteral("mark-shot-rs"));
+    QApplication::setApplicationName(QStringLiteral("mark-shot"));
     QApplication::setApplicationDisplayName(QStringLiteral("Mark Shot"));
     QApplication::setApplicationVersion(QStringLiteral(MARK_SHOT_VERSION));
     QApplication::setWindowIcon(markshot::ui::applicationIcon());
