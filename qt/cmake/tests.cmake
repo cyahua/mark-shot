@@ -136,6 +136,10 @@ add_test(NAME kde-window-detection
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
         ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/kde_window_detection_test.py
 )
+add_test(NAME rapidocr-model-type
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
+        ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/rapidocr_model_type_test.py
+)
 
 qt_add_executable(mark-shot-pinned-window-config-test
     tests/pinned_window_config_test.cpp
