@@ -54,7 +54,8 @@ fi
 
 ELF_COUNT=0
 
-# 1. 遍历安装树中的所有可执行 ELF 文件，收集 DT_NEEDED 条目
+# 1. 遍历安装树中的可执行文件与共享库，收集 DT_NEEDED 条目
+# Debian/Ubuntu 的 CMake 以 0644 安装 MODULE 库，共享库按文件名匹配而不依赖可执行位
 while IFS= read -r -d '' filename; do
     # readelf -h 读不到 ELF Class 说明不是 ELF 文件（脚本、数据文件等），跳过。
     # readelf 对非 ELF 文件返回非零，在 set -e -o pipefail 下会让这条赋值语句
@@ -95,14 +96,14 @@ while IFS= read -r -d '' filename; do
         fi
     done < <(LC_ALL=C readelf -d "$filename" 2>/dev/null \
         | sed -nr 's/.*Shared library: \[(.*)\].*/\1/p' || true)
-done < <(find "$ROOT" -type f -perm -u+x -print0)
+done < <(find "$ROOT" -type f \( -perm -u+x -o -name '*.so' -o -name '*.so.*' \) -print0)
 
 # 安装树里一个 ELF 都没有，通常意味着传错了目录或安装步骤没执行
 if [[ "$ELF_COUNT" -eq 0 ]]; then
     {
         echo "No ELF binaries were found under $ROOT"
-        echo "Files considered (executable bit set):"
-        find "$ROOT" -type f -perm -u+x -printf '  %M %p\n' 2>/dev/null | head -20
+        echo "Files considered (executable bit or shared library name):"
+        find "$ROOT" -type f \( -perm -u+x -o -name '*.so' -o -name '*.so.*' \) -printf '  %M %p\n' 2>/dev/null | head -20
     } >&2
     exit 1
 fi

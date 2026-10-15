@@ -5,7 +5,8 @@ set(MARK_SHOT_RUST_TARGET "" CACHE STRING "Optional explicit Rust target triple"
 if(CMAKE_CROSSCOMPILING AND NOT MARK_SHOT_RUST_TARGET)
     message(FATAL_ERROR "Cross builds require MARK_SHOT_RUST_TARGET matching the C++ toolchain")
 endif()
-set(MARK_SHOT_CARGO_VENDOR_DIR "" CACHE PATH "Optional vendored crate directory for offline builds")
+# 相对路径按源码根目录解析；PATH 类型会被 CMake 预先按构建目录展开，因此使用 STRING
+set(MARK_SHOT_CARGO_VENDOR_DIR "" CACHE STRING "Optional vendored crate directory for offline builds, relative to the source root")
 set(_cargo_target_dir "${CMAKE_BINARY_DIR}/cargo")
 # 【构建】【Cargo参数】构建与测试共用锁文件、目标目录和可选离线源
 set(MARK_SHOT_CARGO_ENV "CARGO_TARGET_DIR=${_cargo_target_dir}")
