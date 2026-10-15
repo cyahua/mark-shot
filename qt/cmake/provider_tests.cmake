@@ -22,6 +22,8 @@ qt_add_executable(mark-shot-ocr-provider-factory-test
     src/debug_log.h
     src/providers/ocr/ocr_plugin_task.cpp
     src/providers/ocr/ocr_plugin_task.h
+    src/memory/process_memory_trim.cpp
+    src/memory/process_memory_trim.h
     src/providers/ocr/ocr_provider_factory.cpp
     src/providers/ocr/ocr_provider_factory.h
     src/providers/ocr/ocr_tesseract_task.cpp
@@ -46,6 +48,9 @@ target_link_libraries(mark-shot-ocr-provider-factory-test
         Qt6::Gui
         Qt6::Test
 )
+if(WIN32)
+    target_link_libraries(mark-shot-ocr-provider-factory-test PRIVATE psapi)
+endif()
 add_test(NAME ocr-provider-factory COMMAND mark-shot-ocr-provider-factory-test)
 
 qt_add_executable(mark-shot-rapid-ocr-word-segments-test
