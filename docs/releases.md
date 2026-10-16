@@ -1,5 +1,13 @@
 # Release Notes
 
+### 0.1.59
+
+- **Rust Core**: Selection geometry, image filters, scroll stitching, annotation history, and configuration now run in the Rust core. The Qt interface and platform capture stay in place.
+- **OCR Editor Space**: The recognition window drops the source-text chrome and moves the copy action up, leaving the remaining space to the editors.
+- **OCR Memory After Recognition**: ONNX sessions are released when recognition returns, and unused heap is returned so a long session does not keep the model footprint.
+- **Bundled Window-Detection Helpers**: KDE and Windows helper scripts resolve next to the installed executable. Fixes #134.
+- **Capture and OCR Stability**: RapidOCR selects a model type the installed version accepts, a missing recording encoder is rejected before capture, and a mismatched ONNX Runtime is reported instead of crashing.
+
 ### 0.1.58
 
 - **UI-Region Hover Selection**: Moving the mouse over controls, cards, and panels outlines the region under the cursor with sub-window granularity. The mouse wheel expands or shrinks across parent and child regions, while Shift+wheel retains loupe scaling.

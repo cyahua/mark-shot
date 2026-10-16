@@ -1,3 +1,12 @@
+mark-shot (0.1.59-0ppa1~resolute1) resolute; urgency=medium
+
+  * Move selection geometry, image filters, stitching, annotation state, and config into the Rust core.
+  * Give the OCR editors more room and release ONNX sessions after recognition.
+  * Resolve bundled window-detection helpers beside the installed executable.
+  * Select a valid RapidOCR model type and reject a missing recording encoder before capture.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Fri, 16 Oct 2026 10:00:00 +0900
+
 mark-shot (0.1.58-0ppa1~resolute1) resolute; urgency=medium
 
   * Add UI-region hover detection on frozen screenshots.

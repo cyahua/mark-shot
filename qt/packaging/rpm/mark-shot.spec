@@ -1,5 +1,5 @@
 Name:           mark-shot
-Version:        0.1.58
+Version:        0.1.59
 Release:        1%{?dist}
 Summary:        Qt 6 screenshot selection and annotation tool
 
@@ -96,6 +96,9 @@ sed -i '1s|^#!/usr/bin/env python3$|#!/usr/bin/python3|' \
 %{_datadir}/gnome-shell/extensions/mark-shot-scroll-helper@snemc.org/
 
 %changelog
+* Fri Oct 16 2026 jswysnemc <snemc@qq.com> - 0.1.59-1
+- Move core image and selection work into Rust and release OCR sessions after recognition
+
 * Tue Oct 13 2026 jswysnemc <snemc@qq.com> - 0.1.58-1
 - Add UI-region hover detection on frozen screenshots and wheel region cycling
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.59 - 2026-10-16
+
+### Features & Enhancements
+
+- **Rust Core**: Selection geometry, image filters, scroll stitching, annotation history, and configuration now run in the Rust core. The Qt interface and platform capture stay in place.
+- **OCR Editor Space**: The recognition window drops the source-text chrome and moves the copy action up, leaving the remaining space to the editors.
+- **OCR Memory After Recognition**: ONNX sessions are released when recognition returns, and unused heap is returned so a long session does not keep the model footprint.
+
+### Bug Fixes
+
+- **Bundled Window-Detection Helpers**: KDE and Windows helper scripts resolve next to the installed executable, including Windows files without an executable bit. Fixes #134.
+- **RapidOCR Model Type**: Each recognition task selects a model type the installed RapidOCR version accepts.
+- **Missing Recording Encoder**: Recording stops before capture when the selected encoder is not available.
+- **Incompatible ONNX Runtime**: A mismatched ONNX Runtime is reported instead of crashing the process.
+- **Windows Recording Backend**: The recording backend stays loaded after the first use and shares one library handle across writers.
+- **Windows Settings Paths**: Command paths stay unquoted unless the path itself requires quotes, and config saves retry while the destination file is briefly open.
+- **Plugin Status Layout**: Plugin status rows stack so long status text does not overflow the settings page.
+- **Editor Scrollbar**: The editor scrollbar is wider and uses an arrow cursor while hovering.
+
 ## 0.1.58 - 2026-10-13
 
 ### Features & Enhancements
