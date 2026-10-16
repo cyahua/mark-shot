@@ -63,6 +63,8 @@ QString toolIconName(ShotWindow::Action action)
         return QStringLiteral("settings");
     case ShotWindow::Action::Cancel:
         return QStringLiteral("cancel");
+    case ShotWindow::Action::Translate:
+        return QStringLiteral("translate");
     }
     return QStringLiteral("tool-select");
 }

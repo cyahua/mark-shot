@@ -147,6 +147,7 @@ void ShotWindow::initializeShortcuts()
     addActionShortcut(Action::Extensions, [this] { toggleExtensionPanel(); });
     addActionShortcut(Action::ScrollCapture, [this] { startScrollCapture(); });
     addActionShortcut(Action::OcrCopy, [this] { ocrCopySelection(); });
+    addActionShortcut(Action::Translate, [this] { translateSelection(); });
     addActionShortcut(Action::Upload, [this] { uploadSelection(); });
     addActionShortcut(Action::Clear, [this] { clearAnnotations(); });
     addActionShortcut(Action::ToggleToolbarLayout, [this] { toggleToolbarLayout(); });

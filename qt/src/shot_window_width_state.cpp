@@ -160,9 +160,14 @@ bool ShotWindow::setSelectedAnnotationWidth(int width, bool captureHistory)
                 } else if (annotation->tool == Tool::Text) {
                     const qreal oldWidth = annotation->width;
                     annotation->width = clampedWidthForTool(annotation->tool, width);
-                    const qreal factor = ((19.0 + annotation->width) / (19.0 + oldWidth)) * 1.05;
-                    annotation->rect.setWidth(annotation->rect.width() * factor);
-                    annotation->rect = textContentRect(*annotation, false);
+                    // 1. 只按字号比例缩放换行宽度，不再每格额外乘 1.05
+                    const qreal oldFont = std::max<qreal>(1.0, 19.0 + oldWidth);
+                    const qreal factor = std::max<qreal>(1.0, 19.0 + annotation->width) / oldFont;
+                    const QRectF current = annotation->rect.normalized();
+                    const qreal scaledWidth = std::max<qreal>(1.0, current.width() * factor);
+                    annotation->rect.setWidth(scaledWidth);
+                    const QRectF measured = textContentRect(*annotation, false);
+                    annotation->rect = QRectF(current.topLeft(), QSizeF(scaledWidth, measured.height()));
                     if (!annotation->points.isEmpty()) {
                         annotation->points[0] = annotation->rect.topLeft();
                     }

@@ -215,7 +215,7 @@ void ShotWindow::drawSelectedAnnotationFrame(QPainter &painter) const
         }
     }
     const QRectF deleteButton = selectedAnnotationDeleteButtonRect();
-    if (!deleteButton.isEmpty()) {
+    if (!deleteButton.isEmpty() && !paintAnnotationDeleteButtonIfEnabled(painter, deleteButton)) {
         painter.setBrush(QColor(239, 68, 68));
         painter.setPen(QPen(QColor(255, 255, 255), 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         painter.drawEllipse(deleteButton);
@@ -489,4 +489,61 @@ QRectF ShotWindow::resizedBounds(QRectF start, SelectionDrag drag, QPointF image
     }
 
     return QRectF(QPointF(left, top), QPointF(right, bottom)).normalized();
+}
+
+namespace {
+
+/// 关闭时删除按钮保持原来的静态绘制
+constexpr bool FEATURE_ANNOTATION_DELETE_BUTTON_HOVER_ENABLED = true;
+
+}  // namespace
+
+/**
+ * 更新标注删除按钮的悬停状态。开关关闭时直接返回。
+ * @param pointer 指针在窗口中的位置。
+ * @return 无返回值。
+ */
+void ShotWindow::updateAnnotationDeleteButtonHoverIfEnabled(QPointF pointer)
+{
+    if (!FEATURE_ANNOTATION_DELETE_BUTTON_HOVER_ENABLED) {
+        return;
+    }
+    const QRectF button = selectedAnnotationDeleteButtonRect();
+    const bool hovered = m_tool == Tool::Select && !m_dragging && button.contains(pointer);
+    if (hovered == m_annotationDeleteButtonHovered) {
+        return;
+    }
+    m_annotationDeleteButtonHovered = hovered;
+    update(button.toAlignedRect().adjusted(-8, -8, 8, 8));
+}
+
+/**
+ * 绘制带悬停反馈的标注删除按钮。开关关闭时返回 false，沿用原绘制。
+ * @param painter 绘制器。
+ * @param deleteButton 按钮矩形。
+ * @return 已绘制时返回 true。
+ */
+bool ShotWindow::paintAnnotationDeleteButtonIfEnabled(QPainter &painter, const QRectF &deleteButton) const
+{
+    if (!FEATURE_ANNOTATION_DELETE_BUTTON_HOVER_ENABLED || deleteButton.isEmpty()) {
+        return false;
+    }
+
+    // 1. 悬停时放大并提亮，静止时保持原来的红色圆钮
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    if (m_annotationDeleteButtonHovered) {
+        painter.setPen(QPen(QColor(254, 202, 202, 210), 2.0));
+        painter.setBrush(QColor(248, 113, 113));
+        painter.drawEllipse(deleteButton.adjusted(-2.5, -2.5, 2.5, 2.5));
+    } else {
+        painter.setBrush(QColor(239, 68, 68));
+        painter.setPen(QPen(QColor(255, 255, 255), 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.drawEllipse(deleteButton);
+    }
+
+    // 2. 白色叉号跟随按钮中心
+    painter.setPen(QPen(QColor(255, 255, 255), 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.drawLine(deleteButton.center() + QPointF(-4.5, -4.5), deleteButton.center() + QPointF(4.5, 4.5));
+    painter.drawLine(deleteButton.center() + QPointF(4.5, -4.5), deleteButton.center() + QPointF(-4.5, 4.5));
+    return true;
 }

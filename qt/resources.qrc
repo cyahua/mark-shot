@@ -40,6 +40,7 @@
     <file alias="magnifier-scale.svg">data/icons/ui/magnifier-scale.svg</file>
     <file alias="magnifier-shape.svg">data/icons/ui/magnifier-shape.svg</file>
     <file alias="ocr.svg">data/icons/ui/ocr.svg</file>
+    <file alias="translate.svg">data/icons/ui/translate.svg</file>
     <file alias="opacity.svg">data/icons/ui/opacity.svg</file>
     <file alias="open-with.svg">data/icons/ui/open-with.svg</file>
     <file alias="pin.svg">data/icons/ui/pin.svg</file>

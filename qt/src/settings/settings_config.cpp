@@ -53,6 +53,7 @@ QString actionConfigName(ShotWindow::Action action)
     case ShotWindow::Action::Upload: return QStringLiteral("upload");
     case ShotWindow::Action::Settings: return QStringLiteral("settings");
     case ShotWindow::Action::Cancel: return QStringLiteral("cancel");
+    case ShotWindow::Action::Translate: return QStringLiteral("translate");
     case ShotWindow::Action::ToolMove: return QStringLiteral("toolMove");
     case ShotWindow::Action::ToolSelect: return QStringLiteral("toolSelect");
     case ShotWindow::Action::ToolPen: return QStringLiteral("toolPen");

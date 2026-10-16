@@ -45,6 +45,9 @@ void PinnedImageWindow::paintImageContents(QPainter &painter, QRectF viewport)
     }
 
     auto drawBorder = [this, &painter, &imageRect] {
+        if (paintPinnedNonWindowChromeIfEnabled(painter, imageRect)) {
+            return;
+        }
         if (!m_config.borderEnabled || !m_config.borderColor.isValid() || m_config.borderWidth <= 0.0) {
             return;
         }

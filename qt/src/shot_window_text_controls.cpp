@@ -2,6 +2,16 @@
 
 #include <QLineEdit>
 
+// ===== 新增 import =====
+#include "ui/recent_font_store.h"
+
+#include <QColor>
+#include <QFontDatabase>
+#include <QIcon>
+#include <QLabel>
+#include <QPainter>
+#include <QPixmap>
+
 namespace {
 
 constexpr int kMinTextPointSize = 8;
@@ -41,12 +51,15 @@ void ShotWindow::initializePropertyFontPanel()
     m_controls.m_propertyFontList->setUniformItemSizes(true);
     m_controls.m_propertyFontList->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_controls.m_propertyFontList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_controls.m_propertyFontList->setTextElideMode(Qt::ElideRight);
+    m_controls.m_propertyFontList->setIconSize(QSize(14, 14));
     for (const QString &family : QFontDatabase::families()) {
         auto *item = new QListWidgetItem(family, m_controls.m_propertyFontList);
         item->setData(Qt::UserRole, family);
         item->setToolTip(family);
-        item->setFont(QFont(family, 11));
+        item->setFont(QFont(family, 13));
     }
+    refreshRecentTextFontsIfEnabled();
     connect(m_controls.m_propertyFontSearch, &QLineEdit::textChanged, this, [this](const QString &query) {
         const QString needle = query.trimmed();
         for (int index = 0; index < m_controls.m_propertyFontList->count(); ++index) {
@@ -56,7 +69,7 @@ void ShotWindow::initializePropertyFontPanel()
         }
     });
     connect(m_controls.m_propertyFontList, &QListWidget::itemClicked, this, [this](QListWidgetItem *item) {
-        if (!item) {
+        if (!item || ignoreRecentFontHeaderClickIfEnabled(item)) {
             return;
         }
         setSelectedTextFontFamily(item->data(Qt::UserRole).toString());
@@ -122,6 +135,7 @@ void ShotWindow::setSelectedTextFontFamily(const QString &fontFamily)
     if (fontFamily.isEmpty()) {
         return;
     }
+    rememberRecentTextFontIfEnabled(fontFamily);
 
     if (m_selectedAnnotationId.has_value()) {
         Annotation *annotation = annotationById(*m_selectedAnnotationId);
@@ -144,6 +158,7 @@ void ShotWindow::setSelectedTextFontFamily(const QString &fontFamily)
     updateAnnotationPropertyPanel();
     update();
     persistAnnotationState();
+    applyEditorDisplayFontIfEnabled();
 }
 
 /**
@@ -168,7 +183,9 @@ void ShotWindow::setSelectedTextFontSize(int pointSize)
         QFont font = m_textEditor->font();
         font.setPointSize(pointSize);
         m_textEditor->setFont(font);
+        applySnowTextEditorGeometryIfEnabled();
     }
+    applyEditorDisplayFontIfEnabled();
     update();
 }
 
@@ -222,6 +239,7 @@ void ShotWindow::setSelectedTextBold(bool bold)
     updateAnnotationPropertyPanel();
     update();
     persistAnnotationState();
+    applyEditorDisplayFontIfEnabled();
 }
 
 /**
@@ -273,4 +291,149 @@ void ShotWindow::setSelectedTextItalic(bool italic)
     updateAnnotationPropertyPanel();
     update();
     persistAnnotationState();
+    applyEditorDisplayFontIfEnabled();
+}
+
+namespace {
+
+constexpr int kRecentFontRowRole = Qt::UserRole + 1;
+
+enum class RecentFontRowKind : int {
+    AllHeader = 1,
+    RecentFont = 2,
+};
+
+/**
+ * 生成字体列表左侧的空白占位，让字体名称对齐。
+ * @return 透明图标。
+ */
+QIcon fontListBlankIcon()
+{
+    QPixmap pixmap(14, 14);
+    pixmap.fill(Qt::transparent);
+    return QIcon(pixmap);
+}
+
+/**
+ * 生成当前字体的勾选标记。
+ * @return 勾选图标。
+ */
+QIcon fontListCheckIcon()
+{
+    QPixmap pixmap(14, 14);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(QColor(229, 231, 235), 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.drawLine(QPointF(2.2, 7.2), QPointF(5.4, 10.6));
+    painter.drawLine(QPointF(5.4, 10.6), QPointF(11.6, 3.2));
+    return QIcon(pixmap);
+}
+
+}  // namespace
+
+/**
+ * 记录用户选中的字体系列。开关关闭时直接返回。
+ * @param fontFamily 字体系列名称。
+ * @return 无返回值。
+ */
+void ShotWindow::rememberRecentTextFontIfEnabled(const QString &fontFamily)
+{
+    if (!markshot::ui::FEATURE_RECENT_TEXT_FONTS_ENABLED) {
+        return;
+    }
+    markshot::ui::rememberRecentFont(fontFamily);
+}
+
+/**
+ * 在字体列表顶部刷新最近使用分区。开关关闭时直接返回。
+ * @return 无返回值。
+ */
+void ShotWindow::refreshRecentTextFontsIfEnabled()
+{
+    if (!markshot::ui::FEATURE_RECENT_TEXT_FONTS_ENABLED) {
+        return;
+    }
+    if (!m_controls.m_propertyFontList) {
+        return;
+    }
+
+    // 1. 移除上一次插入的最近使用分区，完整字体列表保持原顺序
+    for (int index = m_controls.m_propertyFontList->count() - 1; index >= 0; --index) {
+        QListWidgetItem *item = m_controls.m_propertyFontList->item(index);
+        if (item->data(kRecentFontRowRole).toInt() == 0) {
+            continue;
+        }
+        delete m_controls.m_propertyFontList->takeItem(index);
+    }
+
+    // 2. 最近使用放在顶部，每项用该字体绘制名称
+    QString currentFamily = m_textFontFamily;
+    if (m_selectedAnnotationId.has_value()) {
+        if (const Annotation *annotation = annotationById(*m_selectedAnnotationId);
+            annotation && annotation->tool == Tool::Text && !annotation->fontFamily.isEmpty()) {
+            currentFamily = annotation->fontFamily;
+        }
+    }
+    if (currentFamily.isEmpty()) {
+        currentFamily = markshot::theme::textFontFamily();
+    }
+    const QStringList recent = markshot::ui::visibleRecentFonts(
+        markshot::ui::readRecentFonts(), QFontDatabase::families());
+    bool currentInRecent = false;
+    for (int index = recent.size() - 1; index >= 0; --index) {
+        const QString family = recent.at(index);
+        auto *item = new QListWidgetItem(family);
+        item->setData(Qt::UserRole, family);
+        item->setData(kRecentFontRowRole, static_cast<int>(RecentFontRowKind::RecentFont));
+        item->setToolTip(family);
+        item->setFont(QFont(family, 13));
+        item->setIcon(family == currentFamily ? fontListCheckIcon() : fontListBlankIcon());
+        currentInRecent = currentInRecent || family == currentFamily;
+        m_controls.m_propertyFontList->insertItem(0, item);
+    }
+
+    // 3. 有最近使用时，用「所有系统字体」把完整列表隔开
+    if (!recent.isEmpty()) {
+        const int rowHeight = std::max(28, m_controls.m_propertyFontList->sizeHintForRow(0));
+        auto *header = new QListWidgetItem;
+        header->setData(kRecentFontRowRole, static_cast<int>(RecentFontRowKind::AllHeader));
+        header->setFlags(Qt::ItemIsEnabled);
+        header->setSizeHint(QSize(1, rowHeight));
+        m_controls.m_propertyFontList->insertItem(recent.size(), header);
+        auto *label = new QLabel(MS_TR("All system fonts"), m_controls.m_propertyFontList);
+        label->setStyleSheet(QStringLiteral(
+            "QLabel { color: #9CA3AF; background: transparent; font-size: 11px; font-weight: 600; padding: 8px 8px 2px 8px; }"));
+        label->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        m_controls.m_propertyFontList->setIndexWidget(
+            m_controls.m_propertyFontList->model()->index(recent.size(), 0), label);
+    }
+
+    // 4. 系统字体与最近使用左对齐；当前字体只在最近使用里打勾
+    for (int index = recent.size(); index < m_controls.m_propertyFontList->count(); ++index) {
+        QListWidgetItem *item = m_controls.m_propertyFontList->item(index);
+        if (item->data(kRecentFontRowRole).toInt() != 0) {
+            continue;
+        }
+        const QString family = item->data(Qt::UserRole).toString();
+        item->setFont(QFont(family, 13));
+        const bool checked = !currentInRecent && family == currentFamily;
+        item->setIcon(checked ? fontListCheckIcon() : fontListBlankIcon());
+        if (checked) {
+            currentInRecent = true;
+        }
+    }
+}
+
+/**
+ * 点击最近使用标题时不关闭字体面板。
+ * @param item 被点击的列表项。
+ * @return 该行是分区标题时返回 true。
+ */
+bool ShotWindow::ignoreRecentFontHeaderClickIfEnabled(QListWidgetItem *item) const
+{
+    if (!markshot::ui::FEATURE_RECENT_TEXT_FONTS_ENABLED || !item) {
+        return false;
+    }
+    return item->data(kRecentFontRowRole).toInt() == static_cast<int>(RecentFontRowKind::AllHeader);
 }

@@ -92,6 +92,25 @@ private slots:
         QCOMPARE(markshot::window_detection::quoteShellWord(QStringLiteral("/opt/Mark Shot/bin")),
                  QStringLiteral("'/opt/Mark Shot/bin'"));
     }
+
+    /**
+     * 验证内置脚本还会到安装前缀和构建树的 scripts 目录查找。
+     * @return 无返回值。
+     */
+    void bundledCommandSearchIncludesInstallAndBuildLayouts()
+    {
+        const QStringList directories = markshot::window_detection::bundledCommandSearchDirectories(
+            QStringLiteral("/opt/mark-shot/bin"),
+            QStringLiteral("/home/user"),
+            QStringLiteral("/src/mark-shot"));
+        QVERIFY(directories.contains(QStringLiteral("/opt/mark-shot/bin")));
+        QVERIFY(directories.contains(QStringLiteral("/opt/mark-shot/scripts")));
+        QVERIFY(directories.contains(QStringLiteral("/opt/mark-shot/qt/scripts")));
+        QVERIFY(directories.contains(QStringLiteral("/opt/mark-shot/libexec/mark-shot")));
+        QVERIFY(directories.contains(QStringLiteral("/usr/bin")));
+        QVERIFY(directories.contains(QStringLiteral("/home/user/.local/bin")));
+        QVERIFY(directories.contains(QStringLiteral("/src/mark-shot/scripts")));
+    }
 };
 
 QTEST_APPLESS_MAIN(WindowDetectionSessionTest)

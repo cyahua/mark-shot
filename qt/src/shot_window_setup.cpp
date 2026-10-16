@@ -49,6 +49,7 @@ QString toolbarShortcutFallback(ToolbarAction action)
     case ToolbarAction::Extensions: return QStringLiteral("Ext");
     case ToolbarAction::ScrollCapture: return QStringLiteral("Scroll");
     case ToolbarAction::OcrCopy: return QStringLiteral("OCR");
+    case ToolbarAction::Translate: return QStringLiteral("Ctrl+T");
     case ToolbarAction::Save: return QStringLiteral("Save As");
     case ToolbarAction::Upload: return QStringLiteral("Upload");
     case ToolbarAction::Settings: return QStringLiteral("Settings");
@@ -72,7 +73,8 @@ constexpr ToolbarAction kFullscreenViewGroup[] = {ToolbarAction::ToggleCaptureSc
                                                   ToolbarAction::ToggleToolbarLayout};
 constexpr ToolbarAction kFullscreenOutputGroup[] = {ToolbarAction::OpenWith, ToolbarAction::Extensions,
                                                     ToolbarAction::ScrollCapture, ToolbarAction::Pin,
-                                                    ToolbarAction::OcrCopy, ToolbarAction::Copy,
+                                                    ToolbarAction::OcrCopy, ToolbarAction::Translate,
+                                                    ToolbarAction::Copy,
                                                     ToolbarAction::Save, ToolbarAction::Upload};
 // 设置与关闭各自成组，组件在两者之间绘制分隔线
 constexpr ToolbarAction kSessionSettingsGroup[] = {ToolbarAction::Settings};
@@ -81,7 +83,7 @@ constexpr ToolbarAction kSessionCloseGroup[] = {ToolbarAction::Cancel};
 constexpr ToolbarAction kActionScopeGroup[] = {ToolbarAction::ToggleCaptureScope};
 constexpr ToolbarAction kActionExtendGroup[] = {ToolbarAction::OpenWith, ToolbarAction::Extensions,
                                                 ToolbarAction::ScrollCapture, ToolbarAction::Pin,
-                                                ToolbarAction::OcrCopy};
+                                                ToolbarAction::OcrCopy, ToolbarAction::Translate};
 constexpr ToolbarAction kActionOutputGroup[] = {ToolbarAction::Copy, ToolbarAction::Save, ToolbarAction::Upload};
 
 }

@@ -7,6 +7,9 @@
 #include "pinned_window/pinned_layer_shell_screen_binding.h"
 #include "windows_integration.h"
 
+// ===== 新增 import =====
+#include "pinned_window/pinned_non_window_chrome.h"
+
 #include <QGuiApplication>
 #include <QProcessEnvironment>
 #include <QRect>
@@ -214,6 +217,7 @@ markshot::layershell::FloatingOverlayConfig floatingOverlayConfig(QWidget *windo
     config.wantsActiveScreenWhenNoScreen = false;
     config.desiredSize = placement.desiredSize.isEmpty() ? geometry.size() : placement.desiredSize;
     config.margins = placement.margins;
+    markshot::shot::applyPinnedNonWindowLayerShellPolicy(&config);
     return config;
 }
 

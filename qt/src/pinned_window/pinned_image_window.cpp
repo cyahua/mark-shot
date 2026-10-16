@@ -13,6 +13,9 @@
 #include "ui/context_menu_config.h"
 #include "ui/i18n.h"
 
+// ===== 新增 import =====
+#include "pinned_window/pinned_non_window_chrome.h"
+
 #include <QAction>
 #include <QApplication>
 #include <QEnterEvent>
@@ -114,6 +117,7 @@ PinnedImageWindow::PinnedImageWindow(QImage image, std::optional<QPoint> initial
     if (m_config.autoOcr) {
         QTimer::singleShot(0, this, [this] { startOcr(); });
     }
+    applyPinnedNonWindowChromeIfEnabled();
 }
 
 PinnedImageWindow::~PinnedImageWindow()
@@ -125,6 +129,7 @@ PinnedImageWindow::~PinnedImageWindow()
 
 bool PinnedImageWindow::event(QEvent *event)
 {
+    updatePinnedNonWindowHoverIfEnabled(event);
     if (event->type() == QEvent::Hide && !m_layerShellScreenRebindInProgress) {
         // 1. 【钉图】【拖动收尾】隐藏时结束输入状态，也清理等待原图绘制的最后一帧预览
         m_moving = false;

@@ -52,8 +52,9 @@ QRectF ShotWindow::textContentRect(const Annotation &annotation, bool widgetCoor
         textHeight = documentSize.height();
     }
 
+    // 1. 余量必须跟缩放走，否则滚轮放大后选区比文字更宽
     const qreal rectWidth =
-        std::max<qreal>(1.0, std::ceil(textWidth + kTextBackgroundPaddingX * 2.0 * scale) + 5.0);
+        std::max<qreal>(1.0, std::ceil(textWidth + (kTextBackgroundPaddingX * 2.0 + 5.0) * scale));
     const qreal rectHeight =
         std::max<qreal>(1.0, std::ceil(textHeight + kTextBackgroundPaddingY * 2.0 * scale));
     return QRectF(topLeft, QSizeF(rectWidth, rectHeight));

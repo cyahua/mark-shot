@@ -1,6 +1,7 @@
 #include "cli/image_pin_launch.h"
 
 #include "pinned_window/pinned_image_window.h"
+#include "pinned_window/pinned_non_window_chrome.h"
 #include "ui/i18n.h"
 
 #include <QFileInfo>
@@ -50,9 +51,7 @@ QWidget *launchPinnedImageFromPath(const QString &imagePath, QString *error)
     }
 
     auto *window = new markshot::shot::PinnedImageWindow(std::move(image));
-    window->show();
-    window->raise();
-    window->activateWindow();
+    markshot::shot::presentPinnedImage(window);
     return window;
 }
 

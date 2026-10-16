@@ -12,6 +12,9 @@
 #include "providers/provider_task.h"
 #include "save_path_config.h"
 
+// ===== 新增 import =====
+#include "pinned_window/pinned_non_window_chrome.h"
+
 namespace cfg = markshot::config;
 namespace shortcuts = markshot::shortcut;
 using namespace markshot::shot;
@@ -155,9 +158,7 @@ void ShotWindow::pinSelection()
         : std::optional<QPoint>(logicalSelection.topLeft());
     auto *window = createPinnedImageWindow(output, pinnedTopLeft);
     markshot::history::rememberScreenshot(output);
-    window->show();
-    window->raise();
-    window->activateWindow();
+    presentPinnedImage(window);
     close();
 }
 

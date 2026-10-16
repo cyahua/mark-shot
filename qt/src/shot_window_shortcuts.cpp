@@ -183,6 +183,10 @@ bool ShotWindow::handleConfiguredActionShortcut(QKeyEvent *event)
         ocrCopySelection();
         return true;
     }
+    if (eventMatchesShortcut(event, Action::Translate)) {
+        translateSelection();
+        return true;
+    }
     if (eventMatchesShortcut(event, Action::Upload)) {
         uploadSelection();
         return true;

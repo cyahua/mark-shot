@@ -45,6 +45,7 @@ enum class Action {
     Upload,
     Settings,
     Cancel,
+    Translate,
 };
 
 /// @brief 截图标注工具类型

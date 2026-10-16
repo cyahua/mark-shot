@@ -626,7 +626,7 @@ private:
     // 选区内双击手势执行的动作，会话启动时从应用配置读入一次（issue #85）。
     markshot::CaptureDoubleClickAction m_doubleClickAction =
         markshot::CaptureDoubleClickAction::Copy;
-    std::array<QKeySequence, static_cast<int>(Action::Cancel) + 1> m_actionShortcuts;
+    std::array<QKeySequence, static_cast<int>(Action::Translate) + 1> m_actionShortcuts;
     std::array<QKeySequence, static_cast<int>(Tool::Marker) + 1> m_toolShortcuts;
     QKeySequence m_startupColorPickerShortcut;
     QKeySequence m_startupRulerShortcut;
@@ -730,4 +730,85 @@ private:
     markshot::region_detection::SelectionCursor m_regionCursor;
     QFutureWatcher<std::shared_ptr<markshot::region_detection::RegionDetector>> *m_regionDetectorWatcher = nullptr;
     QPointF m_selectionClickStart;
+
+    // --- 新增：扫码跟随鼠标所在屏幕 ---
+    bool m_applyingRoutedStartupTool = false;
+    /// @brief 扫码模式不在光标屏幕时，请求会话转发。
+    /// @return 无返回值。
+    void routeCodeScannerToCursorScreenIfEnabled();
+    /// @brief 光标进入本覆盖层时，请求接管其他屏幕的扫码模式。
+    /// @param event 当前窗口事件。
+    /// @return 无返回值。
+    void claimCodeScannerFromPeersIfEnabled(QEvent *event);
+
+public:
+    /// @brief 返回当前选区前辅助工具。
+    /// @return 当前辅助工具。
+    markshot::shot::types::StartupTool startupTool() const;
+    /// @brief 返回本覆盖层对应的截图屏幕。
+    /// @return 截图屏幕，尚未记录时返回窗口当前屏幕。
+    QScreen *captureScreen() const;
+    /// @brief 由会话把辅助工具应用到光标所在覆盖层，不再二次转发。
+    /// @param tool 要应用的辅助工具。
+    /// @return 无返回值。
+    void applyRoutedStartupTool(markshot::shot::types::StartupTool tool);
+    /// @brief 对当前选区执行 OCR 并把译文画回预览。
+    /// @return 无返回值。
+    void translateSelection();
+
+signals:
+    /// @brief 扫码模式落在了非光标屏幕，请求会话转发到光标所在覆盖层。
+    /// @param window 当前收到快捷键的覆盖层。
+    void codeScannerRouteRequested(ShotWindow *window);
+    /// @brief 光标进入本覆盖层时，请求接管其他屏幕上的扫码模式。
+    /// @param window 光标所在覆盖层。
+    void codeScannerClaimRequested(ShotWindow *window);
+
+private:
+    /// @brief 记录用户选中的字体系列。
+    /// @param fontFamily 字体系列名称。
+    /// @return 无返回值。
+    void rememberRecentTextFontIfEnabled(const QString &fontFamily);
+    /// @brief 在字体列表顶部刷新最近使用分区。
+    /// @return 无返回值。
+    void refreshRecentTextFontsIfEnabled();
+    /// @brief 点击最近使用标题时不关闭字体面板。
+    /// @param item 被点击的列表项。
+    /// @return 该行是分区标题时返回 true。
+    bool ignoreRecentFontHeaderClickIfEnabled(QListWidgetItem *item) const;
+    /// @brief 更新标注删除按钮的悬停状态。
+    /// @param pointer 指针在窗口中的位置。
+    /// @return 无返回值。
+    void updateAnnotationDeleteButtonHoverIfEnabled(QPointF pointer);
+    /// @brief 绘制带悬停反馈的标注删除按钮。
+    /// @param painter 绘制器。
+    /// @param deleteButton 按钮矩形。
+    /// @return 已绘制时返回 true。
+    bool paintAnnotationDeleteButtonIfEnabled(QPainter &painter, const QRectF &deleteButton) const;
+    /// @brief 按 snow 的文字输入规则处理按键。
+    /// @param watched 事件来源。
+    /// @param event 当前事件。
+    /// @return 已处理时返回 true。
+    bool handleSnowTextEditorKeyIfEnabled(QObject *watched, QEvent *event);
+    /// @brief 文字变化时让编辑器跟着内容增高。
+    /// @return 无返回值。
+    void connectSnowTextEditorGeometryIfEnabled();
+    /// @brief 去掉文字编辑器的虚线框，改用实际字体绘制。
+    /// @return 无返回值。
+    void applySnowTextEditorChromeIfEnabled();
+    /// @brief 按文字内容调整编辑器尺寸。
+    /// @return 无返回值。
+    void applySnowTextEditorGeometryIfEnabled();
+    /// @brief 把编辑器字体改成和成图相同的字体。
+    /// @return 无返回值。
+    void applyEditorDisplayFontIfEnabled();
+    /// @brief 提交时用编辑器记录的字体覆盖解析后的字体名。
+    /// @param annotation 正在提交的文字标注。
+    /// @return 无返回值。
+    void copyEditorFontToAnnotationIfEnabled(Annotation &annotation);
+    /// @brief 停止录制后退出选区，编码留在后台完成。
+    /// @return 停止请求已提交时返回 true。
+    bool stopActiveRecordingAndExitSelectionIfEnabled();
+    bool m_annotationDeleteButtonHovered = false;
+    bool m_updatingSnowTextEditorGeometry = false;
 };

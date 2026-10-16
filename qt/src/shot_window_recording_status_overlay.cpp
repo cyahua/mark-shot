@@ -109,13 +109,7 @@ bool ShotWindow::activeRecordingAvailable() const
 
 bool ShotWindow::stopActiveRecordingFromOverlay()
 {
-    QString error;
-    const bool stopped = markshot::recording::RecordingSessionManager::instance().stop(&error);
-    if (!stopped && !error.isEmpty()) {
-        showToast(error, 1800);
-    }
-    update();
-    return stopped;
+    return stopActiveRecordingAndExitSelectionIfEnabled();
 }
 
 QRectF ShotWindow::activeRecordingStopButtonRect() const
@@ -200,4 +194,50 @@ void ShotWindow::drawActiveRecordingStatus(QPainter &painter)
     painter.setPen(QColor(255, 255, 255));
     painter.drawText(button, Qt::AlignCenter, MS_TR("Stop Recording"));
     painter.restore();
+}
+
+namespace {
+
+/// 停止录制后直接退出选区。关闭时保持原有行为：只停录制并留在选区。
+constexpr bool FEATURE_RECORDING_STOP_EXITS_SELECTION_ENABLED = true;
+
+}  // namespace
+
+/**
+ * 停止录制并退出选区。
+ * @return 停止请求已提交时返回 true。
+ */
+bool ShotWindow::stopActiveRecordingAndExitSelectionIfEnabled()
+{
+    if (!FEATURE_RECORDING_STOP_EXITS_SELECTION_ENABLED) {
+        QString error;
+        const bool stopped = markshot::recording::RecordingSessionManager::instance().stop(&error);
+        if (!stopped && !error.isEmpty()) {
+            showToast(error, 1800);
+        }
+        update();
+        return stopped;
+    }
+
+    // 1. 先收起当前覆盖层，点击立刻离开画面，不等编码
+    hide();
+
+    // 2. 停止请求只暂停采集并排队收尾，视频编码在写出线程完成
+    QString error;
+    const bool stopped = markshot::recording::RecordingSessionManager::instance().stop(&error);
+    if (!stopped) {
+        show();
+        raise();
+        activateWindow();
+        if (!error.isEmpty()) {
+            showToast(error, 1800);
+        }
+        update();
+        return false;
+    }
+
+    // 3. 关闭全部选区覆盖层，不再回到框选
+    emit sessionCancelRequested();
+    close();
+    return true;
 }

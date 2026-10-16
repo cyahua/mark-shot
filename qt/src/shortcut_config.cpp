@@ -22,6 +22,7 @@ ActionShortcuts defaultActionShortcuts()
     shortcuts[actionIndex(ShotWindow::Action::Save)] = QKeySequence(Qt::CTRL | Qt::Key_S);
     shortcuts[actionIndex(ShotWindow::Action::Upload)] = QKeySequence(Qt::CTRL | Qt::Key_U);
     shortcuts[actionIndex(ShotWindow::Action::Cancel)] = QKeySequence(Qt::Key_Escape);
+    shortcuts[actionIndex(ShotWindow::Action::Translate)] = QKeySequence(Qt::CTRL | Qt::Key_T);
     shortcuts[actionIndex(ShotWindow::Action::Undo)] = QKeySequence(Qt::CTRL | Qt::Key_Z);
     shortcuts[actionIndex(ShotWindow::Action::Redo)] = QKeySequence(Qt::CTRL | Qt::Key_Y);
     return shortcuts;
@@ -208,6 +209,7 @@ std::optional<ShotWindow::Action> actionFromConfigName(QString name)
     if (key == QStringLiteral("pin")) return ShotWindow::Action::Pin;
     if (key == QStringLiteral("scroll") || key == QStringLiteral("scrollcapture")) return ShotWindow::Action::ScrollCapture;
     if (key == QStringLiteral("ocr") || key == QStringLiteral("ocrcopy")) return ShotWindow::Action::OcrCopy;
+    if (key == QStringLiteral("translate") || key == QStringLiteral("translation")) return ShotWindow::Action::Translate;
     if (key == QStringLiteral("magnifier") || key == QStringLiteral("magnify")
         || key == QStringLiteral("loupe") || key == QStringLiteral("zoom")) {
         return ShotWindow::Action::ToolMagnifier;

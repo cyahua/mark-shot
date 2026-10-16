@@ -35,7 +35,7 @@ private:
     void addActionShortcutRows(QFormLayout *form);
 
     std::array<QKeySequenceEdit *, static_cast<int>(ShotWindow::Tool::Marker) + 1> m_toolEdits = {};
-    std::array<QKeySequenceEdit *, static_cast<int>(ShotWindow::Action::Cancel) + 1> m_actionEdits = {};
+    std::array<QKeySequenceEdit *, static_cast<int>(ShotWindow::Action::Translate) + 1> m_actionEdits = {};
     QKeySequenceEdit *m_startupColorPicker = nullptr;
     QKeySequenceEdit *m_startupRuler = nullptr;
     QKeySequenceEdit *m_startupCodeScanner = nullptr;

@@ -85,7 +85,7 @@ std::array<ShotWindow::Tool, static_cast<int>(ShotWindow::Tool::Laser) + 1> conf
 
 /// @brief 返回设置界面支持编辑的动作列表。
 /// @return 标注动作数组。
-std::array<ShotWindow::Action, 15> configurableActions()
+std::array<ShotWindow::Action, 16> configurableActions()
 {
     return {ShotWindow::Action::ToggleCaptureScope,
             ShotWindow::Action::ToggleToolbarLayout,
@@ -97,6 +97,7 @@ std::array<ShotWindow::Action, 15> configurableActions()
             ShotWindow::Action::Pin,
             ShotWindow::Action::ScrollCapture,
             ShotWindow::Action::OcrCopy,
+            ShotWindow::Action::Translate,
             ShotWindow::Action::Copy,
             ShotWindow::Action::Save,
             ShotWindow::Action::Upload,

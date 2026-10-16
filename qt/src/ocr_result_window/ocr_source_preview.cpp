@@ -2,6 +2,7 @@
 
 #include "annotation_launch.h"
 #include "pinned_window/pinned_image_window.h"
+#include "pinned_window/pinned_non_window_chrome.h"
 #include "ui/context_menu.h"
 #include "ui/context_menu_config.h"
 #include "ui/i18n.h"
@@ -182,9 +183,7 @@ void OcrSourcePreview::contextMenuEvent(QContextMenuEvent *event)
     });
     menu.addAction(MS_TR("Pin image"), this, [image] {
         auto *window = new markshot::shot::PinnedImageWindow(image);
-        window->show();
-        window->raise();
-        window->activateWindow();
+        markshot::shot::presentPinnedImage(window);
     });
     menu.exec(event->globalPos());
 }

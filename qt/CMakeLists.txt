@@ -219,6 +219,9 @@ qt_add_executable(mark-shot
     src/pinned_window/pinned_image_window_ocr.cpp
     src/pinned_window/pinned_image_window_text_selection.cpp
     src/pinned_window/pinned_image_window_translation.cpp
+    src/pinned_window/pinned_image_window_chrome.cpp
+    src/pinned_window/pinned_non_window_chrome.cpp
+    src/pinned_window/pinned_non_window_chrome.h
     src/pinned_window/pinned_layer_shell_geometry.cpp
     src/pinned_window/pinned_layer_shell_geometry.h
     src/pinned_window/pinned_layer_shell_drag_preview.cpp
@@ -258,6 +261,8 @@ qt_add_executable(mark-shot
     src/ui/color_picker.h
     src/ui/color_history_store.cpp
     src/ui/color_history_store.h
+    src/ui/recent_font_store.cpp
+    src/ui/recent_font_store.h
     src/ui/context_menu.cpp
     src/ui/context_menu.h
     src/ui/context_menu_config.cpp

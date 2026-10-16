@@ -464,6 +464,21 @@ private:
     bool m_ocrBackendWarningShown = false;
     bool m_recreating = false;
     bool m_layerShellScreenRebindPending = false;
+
+    // --- 新增：非窗口贴图的悬停边缘 ---
+    bool m_pinChromeHovered = false;
+    /// @brief 把贴图改成不抢焦点的工具层。
+    /// @return 无返回值。
+    void applyPinnedNonWindowChromeIfEnabled();
+    /// @brief 根据进入或离开更新边缘强调状态。
+    /// @param event 窗口事件。
+    /// @return 无返回值。
+    void updatePinnedNonWindowHoverIfEnabled(QEvent *event);
+    /// @brief 绘制悬停和未悬停时的边缘与阴影。
+    /// @param painter 当前画笔。
+    /// @param imageRect 图片显示矩形。
+    /// @return 已接管边框绘制时返回 true。
+    bool paintPinnedNonWindowChromeIfEnabled(QPainter &painter, const QRectF &imageRect);
 };
 
 }  // namespace markshot::shot

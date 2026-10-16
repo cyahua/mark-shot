@@ -557,6 +557,7 @@ void ShotWindow::toggleSelectedTextFontPanel()
     if (m_controls.m_propertyColorDialogPanel) {
         m_controls.m_propertyColorDialogPanel->hide();
     }
+    refreshRecentTextFontsIfEnabled();
     updateAnnotationPropertyPanel();
     if (QLayout *fontLayout = m_controls.m_propertyFontPanel->layout()) {
         fontLayout->activate();
@@ -632,6 +633,7 @@ void ShotWindow::applyPropertyColor(QColor color)
         editorFont.setWeight(editorWeight);
         editorFont.setItalic(editorItalic);
         m_textEditor->setFont(editorFont);
+        applySnowTextEditorChromeIfEnabled();
     }
     updateColorPalettePreview();
     updateAnnotationPropertyPanel();

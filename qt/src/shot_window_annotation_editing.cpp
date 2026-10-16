@@ -396,6 +396,7 @@ void ShotWindow::setCurrentColor(QColor color)
                 m_currentColor,
                 m_textBackgroundColor,
                 qRound(19.0 + m_textSize)));
+        applySnowTextEditorChromeIfEnabled();
     }
     updateColorPalettePreview();
     updateAnnotationPropertyPanel();

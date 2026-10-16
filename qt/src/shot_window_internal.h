@@ -169,6 +169,11 @@ QWidget *createOcrResultWindow(QString text,
                                QImage sourceImage = {},
                                QVector<markshot::ocr::Token> tokens = {});
 QWidget *createCodeScanResultWindow(QString text);
+/// @brief 把扫码结果窗口放到指定屏幕中央。
+/// @param window 扫码结果窗口。
+/// @param screen 选区所在屏幕，为空时使用光标所在屏幕。
+/// @return 无返回值。
+void placeCodeScanResultWindow(QWidget *window, QScreen *screen);
 QWidget *createPinnedImageWindow(QImage image, std::optional<QPoint> initialTopLeft = std::nullopt);
 
 }  // namespace markshot::shot

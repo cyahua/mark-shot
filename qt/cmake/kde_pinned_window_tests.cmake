@@ -19,6 +19,7 @@ qt_add_executable(mark-shot-kde-pinned-windows-test
     tests/kde/pinned_resize_checks.cpp
     tests/kde/pinned_resize_checks.h
     src/pinned_window_top.cpp
+    src/pinned_window/pinned_non_window_chrome.cpp
     src/pinned_window/pinned_kde_keep_above.cpp
     src/pinned_window/pinned_kde_keep_above_script.cpp
     src/pinned_window/pinned_kde_keep_above_bridge.cpp

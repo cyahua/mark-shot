@@ -8,6 +8,7 @@
 
 bool ShotWindow::event(QEvent *event)
 {
+    claimCodeScannerFromPeersIfEnabled(event);
     const QEvent::Type type = event->type();
     if (type == QEvent::MouseButtonPress || type == QEvent::MouseButtonDblClick) {
         ++m_pointerInteractionSerial;

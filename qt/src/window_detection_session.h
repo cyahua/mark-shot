@@ -134,4 +134,36 @@ inline QString quoteShellWord(const QString &word)
     return QLatin1Char('\'') + escaped + QLatin1Char('\'');
 }
 
+/**
+ * 列出内置窗口检测脚本的查找目录。
+ * 安装前缀、本地构建树和用户 bin 都覆盖，避免只查可执行文件同目录时出现 command not found。
+ * @param applicationDirectory 可执行文件所在目录。
+ * @param homeDirectory 当前用户主目录。
+ * @param currentDirectory 进程工作目录。
+ * @return 按优先级排列的目录。
+ */
+inline QStringList bundledCommandSearchDirectories(const QString &applicationDirectory,
+                                                   const QString &homeDirectory,
+                                                   const QString &currentDirectory)
+{
+    QStringList directories;
+    const auto append = [&directories](const QString &path) {
+        const QString cleaned = QDir::cleanPath(path);
+        if (!cleaned.isEmpty() && !directories.contains(cleaned)) {
+            directories.append(cleaned);
+        }
+    };
+    append(applicationDirectory);
+    append(QDir(applicationDirectory).filePath(QStringLiteral("scripts")));
+    append(QDir(applicationDirectory).filePath(QStringLiteral("../scripts")));
+    append(QDir(applicationDirectory).filePath(QStringLiteral("../qt/scripts")));
+    append(QDir(applicationDirectory).filePath(QStringLiteral("../libexec/mark-shot")));
+    append(QDir(applicationDirectory).filePath(QStringLiteral("../lib/mark-shot")));
+    append(QDir(currentDirectory).filePath(QStringLiteral("scripts")));
+    append(QDir(homeDirectory).filePath(QStringLiteral(".local/bin")));
+    append(QStringLiteral("/usr/local/bin"));
+    append(QStringLiteral("/usr/bin"));
+    return directories;
+}
+
 }  // namespace markshot::window_detection

@@ -33,7 +33,7 @@ std::array<ShotWindow::Tool, static_cast<int>(ShotWindow::Tool::Marker) + 1> sho
 
 /// @brief 返回设置页支持编辑的动作列表。
 /// @return 标注动作数组。
-std::array<ShotWindow::Action, 15> shortcutActions()
+std::array<ShotWindow::Action, 16> shortcutActions()
 {
     return {ShotWindow::Action::ToggleCaptureScope,
             ShotWindow::Action::ToggleToolbarLayout,
@@ -45,6 +45,7 @@ std::array<ShotWindow::Action, 15> shortcutActions()
             ShotWindow::Action::Pin,
             ShotWindow::Action::ScrollCapture,
             ShotWindow::Action::OcrCopy,
+            ShotWindow::Action::Translate,
             ShotWindow::Action::Copy,
             ShotWindow::Action::Save,
             ShotWindow::Action::Upload,
@@ -92,6 +93,7 @@ QString actionLabel(ShotWindow::Action action)
     case ShotWindow::Action::Pin: return MS_TR("Pin");
     case ShotWindow::Action::ScrollCapture: return MS_TR("Scroll Capture");
     case ShotWindow::Action::OcrCopy: return MS_TR("OCR Copy");
+    case ShotWindow::Action::Translate: return MS_TR("Translate");
     case ShotWindow::Action::Copy: return MS_TR("Copy");
     case ShotWindow::Action::Save: return MS_TR("Save");
     case ShotWindow::Action::Upload: return MS_TR("Upload");

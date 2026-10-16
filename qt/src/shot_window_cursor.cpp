@@ -87,6 +87,7 @@ bool ShotWindow::selectionPointerVisible() const
 
 void ShotWindow::updatePointerCursor(QPointF widgetPoint)
 {
+    updateAnnotationDeleteButtonHoverIfEnabled(widgetPoint);
     if (m_operationBusy) {
         setCursor(Qt::BusyCursor);
         return;

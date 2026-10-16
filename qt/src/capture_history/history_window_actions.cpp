@@ -5,6 +5,7 @@
 #include "app_config_store.h"
 #include "clipboard_image.h"
 #include "pinned_window/pinned_image_window.h"
+#include "pinned_window/pinned_non_window_chrome.h"
 #include "ui/i18n.h"
 #include "ui/theme.h"
 
@@ -38,9 +39,7 @@ void HistoryWindow::pinSelected()
         return;
     }
     auto *window = new markshot::shot::PinnedImageWindow(m_currentImage);
-    window->show();
-    window->raise();
-    window->activateWindow();
+    markshot::shot::presentPinnedImage(window);
 }
 
 void HistoryWindow::saveSelected()

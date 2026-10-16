@@ -15,7 +15,8 @@ void ShotWindow::initializeTextEditor()
     m_textEditor->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_textEditor->setAttribute(Qt::WA_InputMethodEnabled, true);
     m_textEditor->viewport()->setAutoFillBackground(false);
-    m_textEditor->setToolTip(MS_TR("Enter inserts newline, click outside commits, Esc cancels"));
+    m_textEditor->setToolTip(MS_TR("Enter inserts newline, Ctrl+Enter or Esc commits, click outside commits"));
+    connectSnowTextEditorGeometryIfEnabled();
     m_textEditor->hide();
     m_textEditor->installEventFilter(this);
     m_textEditor->viewport()->installEventFilter(this);
@@ -39,6 +40,7 @@ void ShotWindow::beginTextAnnotation(QPointF imagePoint)
     QFont editorFont = markshot::theme::textFont(pointSize, m_textWeight, m_textFontFamily);
     editorFont.setItalic(m_textItalic);
     m_textEditor->setFont(editorFont);
+    applySnowTextEditorChromeIfEnabled();
     m_textEditor->show();
     m_textEditor->raise();
     updateTextEditorGeometry();
@@ -72,6 +74,7 @@ void ShotWindow::beginEditingSelectedTextAnnotation()
         markshot::theme::textFont(pointSize, annotation->fontWeight, annotation->fontFamily);
     editorFont.setItalic(annotation->textItalic);
     m_textEditor->setFont(editorFont);
+    applySnowTextEditorChromeIfEnabled();
     if (m_controls.m_annotationPropertyPanel) {
         m_controls.m_annotationPropertyPanel->hide();
     }
@@ -85,6 +88,7 @@ void ShotWindow::beginEditingSelectedTextAnnotation()
     m_textEditor->raise();
     const QRectF widgetRect = textContentRect(*annotation, true);
     m_textEditor->setGeometry(widgetRect.toAlignedRect().adjusted(0, 0, 1, 1));
+    applySnowTextEditorGeometryIfEnabled();
     m_textEditor->setFocus(Qt::MouseFocusReason);
     updateLayerShellForIme();
     update();
@@ -116,6 +120,7 @@ void ShotWindow::commitTextEditor()
             annotation->fontFamily = m_textEditor->font().family();
             annotation->fontWeight = m_textEditor->font().weight();
             annotation->textItalic = m_textEditor->font().italic();
+            copyEditorFontToAnnotationIfEnabled(*annotation);
             annotation->rect = textContentRect(*annotation, false);
             if (!annotation->points.isEmpty()) {
                 annotation->points[0] = annotation->rect.topLeft();
@@ -145,6 +150,7 @@ void ShotWindow::commitTextEditor()
         annotation.fontFamily = m_textEditor->font().family();
         annotation.fontWeight = m_textEditor->font().weight();
         annotation.textItalic = m_textEditor->font().italic();
+        copyEditorFontToAnnotationIfEnabled(annotation);
         annotation.rect = textContentRect(annotation, false);
         m_textFontFamily = annotation.fontFamily;
         m_textWeight = annotation.fontWeight;
@@ -212,4 +218,223 @@ void ShotWindow::showTextEditorContextMenu(const QPoint &globalPosition)
               [this] { m_textEditor->selectAll(); });
 
     menu.exec(globalPosition);
+}
+
+namespace {
+
+/// 关闭时保留原来的虚线输入框，以及 Esc 取消编辑
+constexpr bool FEATURE_TEXT_EDITOR_SNOW_INPUT_ENABLED = true;
+
+/**
+ * 生成与 snow 画布输入一致的编辑器样式：无边框，字号字重交给 QFont。
+ * @param color 文字颜色。
+ * @param backgroundColor 文字背景色。
+ * @return 样式表。
+ */
+QString snowTextEditorStyleSheet(const QColor &color, const QColor &backgroundColor, const QFont &font)
+{
+    const QString foreground = QStringLiteral("rgba(%1, %2, %3, %4)")
+                                   .arg(color.red())
+                                   .arg(color.green())
+                                   .arg(color.blue())
+                                   .arg(color.alpha());
+    const QString background = QStringLiteral("rgba(%1, %2, %3, %4)")
+                                   .arg(backgroundColor.red())
+                                   .arg(backgroundColor.green())
+                                   .arg(backgroundColor.blue())
+                                   .arg(backgroundColor.alpha());
+    QString family = font.family();
+    family.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
+    family.replace(QLatin1Char('\''), QStringLiteral("\\'"));
+    return QStringLiteral(
+               "QTextEdit#textEditor {"
+               " color: %1;"
+               " background: %2;"
+               " border: 0;"
+               " padding: 0;"
+               " font-family: '%3';"
+               " font-size: %4pt;"
+               " font-weight: %5;"
+               " font-style: %6;"
+               " selection-background-color: rgba(51, 153, 255, 120);"
+               " selection-color: #FFFFFF;"
+               "}"
+               "QTextEdit#textEditor QAbstractScrollArea { background: transparent; border: 0; }"
+               "QTextEdit#textEditor QWidget { background: %2; font-family: '%3'; }")
+        .arg(foreground, background, family)
+        .arg(std::max(1, font.pointSize()))
+        .arg(static_cast<int>(font.weight()))
+        .arg(font.italic() ? QStringLiteral("italic") : QStringLiteral("normal"));
+}
+
+}  // namespace
+
+/**
+ * 按 snow 的文字输入规则处理按键。开关关闭时直接返回。
+ * @param watched 事件来源。
+ * @param event 当前事件。
+ * @return 已处理时返回 true。
+ */
+bool ShotWindow::handleSnowTextEditorKeyIfEnabled(QObject *watched, QEvent *event)
+{
+    if (!FEATURE_TEXT_EDITOR_SNOW_INPUT_ENABLED) {
+        return false;
+    }
+    if (!m_textEditor || !m_textEditor->isVisible() || watched != m_textEditor
+        || !event || event->type() != QEvent::KeyPress) {
+        return false;
+    }
+
+    // 1. Esc 与 Ctrl+回车结束输入；单独回车仍由编辑器换行
+    const auto *keyEvent = static_cast<const QKeyEvent *>(event);
+    const bool commitByEscape = keyEvent->key() == Qt::Key_Escape;
+    const bool commitByEnter = (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
+        && keyEvent->modifiers().testFlag(Qt::ControlModifier);
+    if (!commitByEscape && !commitByEnter) {
+        return false;
+    }
+    commitTextEditor();
+    return true;
+}
+
+/**
+ * 文字变化时让编辑器跟着内容增高。开关关闭时直接返回。
+ * @return 无返回值。
+ */
+void ShotWindow::connectSnowTextEditorGeometryIfEnabled()
+{
+    if (!FEATURE_TEXT_EDITOR_SNOW_INPUT_ENABLED || !m_textEditor || !m_textEditor->document()) {
+        return;
+    }
+    connect(m_textEditor->document(), &QTextDocument::contentsChanged, this, [this] {
+        applySnowTextEditorGeometryIfEnabled();
+    });
+}
+
+/**
+ * 去掉文字编辑器的虚线框，改用实际字体绘制。开关关闭时直接返回。
+ * @return 无返回值。
+ */
+void ShotWindow::applySnowTextEditorChromeIfEnabled()
+{
+    if (!FEATURE_TEXT_EDITOR_SNOW_INPUT_ENABLED || !m_textEditor) {
+        return;
+    }
+    applyEditorDisplayFontIfEnabled();
+}
+
+/**
+ * 按文字内容调整编辑器尺寸。开关关闭时直接返回。
+ * @return 无返回值。
+ */
+void ShotWindow::applySnowTextEditorGeometryIfEnabled()
+{
+    if (!FEATURE_TEXT_EDITOR_SNOW_INPUT_ENABLED || !m_textEditor || !m_textEditor->isVisible()
+        || m_updatingSnowTextEditorGeometry) {
+        return;
+    }
+    m_updatingSnowTextEditorGeometry = true;
+
+    // 1. 先按单行自然宽度测量，超出窗口后再换行并增高
+    QTextDocument *document = m_textEditor->document();
+    constexpr int kPad = 2;
+    const int minWidth = std::max(28, m_textEditor->fontMetrics().height() * 2);
+    const int minHeight = std::max(18, m_textEditor->fontMetrics().height());
+    const QPoint anchor = m_textEditor->geometry().topLeft();
+    const int maxWidth = std::max(minWidth, width() - anchor.x() - 8);
+    const int maxHeight = std::max(minHeight, height() - anchor.y() - 8);
+    document->setTextWidth(-1);
+    const int editorWidth = std::clamp(qCeil(document->idealWidth()) + kPad, minWidth, maxWidth);
+    document->setTextWidth(std::max(1, editorWidth - kPad));
+    const int editorHeight = std::clamp(qCeil(document->size().height()) + kPad, minHeight, maxHeight);
+
+    // 2. 保持左上角锚点，只把超出窗口的部分移回可见区域
+    QRect editorRect(anchor, QSize(editorWidth, editorHeight));
+    const int maxLeft = std::max(8, width() - editorRect.width() - 8);
+    const int maxTop = std::max(8, height() - editorRect.height() - 8);
+    editorRect.moveLeft(std::clamp(editorRect.left(), 8, maxLeft));
+    editorRect.moveTop(std::clamp(editorRect.top(), 8, maxTop));
+    if (m_textEditor->geometry() != editorRect) {
+        m_textEditor->setGeometry(editorRect);
+    }
+    m_updatingSnowTextEditorGeometry = false;
+}
+
+/**
+ * 把编辑器字体改成和成图相同的字体。开关关闭时直接返回。
+ * @return 无返回值。
+ */
+void ShotWindow::applyEditorDisplayFontIfEnabled()
+{
+    if (!FEATURE_TEXT_EDITOR_SNOW_INPUT_ENABLED || !m_textEditor) {
+        return;
+    }
+
+    // 1. 字号、字重、家族与 drawAnnotation 使用同一套计算
+    QString family = m_textFontFamily;
+    QFont::Weight weight = m_textWeight;
+    bool italic = m_textItalic;
+    qreal width = m_textSize;
+    QColor color = m_currentColor;
+    QColor background = m_textBackgroundColor;
+    if (m_editingTextAnnotationId.has_value()) {
+        if (const Annotation *annotation = annotationById(*m_editingTextAnnotationId)) {
+            if (!annotation->fontFamily.isEmpty()) {
+                family = annotation->fontFamily;
+            }
+            weight = annotation->fontWeight;
+            italic = annotation->textItalic;
+            width = annotation->width;
+            color = annotation->color;
+            background = annotation->backgroundColor;
+        }
+    }
+    const int pointSize = std::max(1, qRound((19.0 + width) * annotationSizeScale(true)));
+    QFont font = markshot::theme::textFont(pointSize, weight, family);
+    font.setItalic(italic);
+
+    // 2. 样式表锁住家族和字号，避免编辑器回落到界面字体
+    m_textEditor->setFont(font);
+    if (QTextDocument *document = m_textEditor->document()) {
+        document->setDocumentMargin(0);
+        document->setDefaultFont(font);
+    }
+    const int position = m_textEditor->textCursor().position();
+    QTextCursor cursor = m_textEditor->textCursor();
+    cursor.select(QTextCursor::Document);
+    QTextCharFormat format;
+    format.setFont(font);
+    cursor.setCharFormat(format);
+    cursor.clearSelection();
+    cursor.setPosition(std::clamp(position, 0, std::max(0, m_textEditor->document()->characterCount() - 1)));
+    m_textEditor->setTextCursor(cursor);
+    m_textEditor->mergeCurrentCharFormat(format);
+    m_textEditor->setProperty("markShotFontFamily", family.isEmpty() ? font.family() : family);
+    m_textEditor->setProperty("markShotFontWeight", static_cast<int>(weight));
+    m_textEditor->setProperty("markShotFontItalic", italic);
+    m_textEditor->setStyleSheet(snowTextEditorStyleSheet(color, background, font));
+}
+
+/**
+ * 提交时用编辑器记录的字体覆盖解析后的字体名。开关关闭时直接返回。
+ * @param annotation 正在提交的文字标注。
+ * @return 无返回值。
+ */
+void ShotWindow::copyEditorFontToAnnotationIfEnabled(Annotation &annotation)
+{
+    if (!FEATURE_TEXT_EDITOR_SNOW_INPUT_ENABLED || !m_textEditor) {
+        return;
+    }
+    const QString family = m_textEditor->property("markShotFontFamily").toString();
+    if (!family.isEmpty()) {
+        annotation.fontFamily = family;
+    }
+    const QVariant weight = m_textEditor->property("markShotFontWeight");
+    if (weight.isValid()) {
+        annotation.fontWeight = static_cast<QFont::Weight>(weight.toInt());
+    }
+    const QVariant italic = m_textEditor->property("markShotFontItalic");
+    if (italic.isValid()) {
+        annotation.textItalic = italic.toBool();
+    }
 }

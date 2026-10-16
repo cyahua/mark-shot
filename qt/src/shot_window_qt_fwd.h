@@ -20,3 +20,4 @@ class QTextEdit;
 class QTimer;
 class QToolButton;
 class QWheelEvent;
+class QListWidgetItem;

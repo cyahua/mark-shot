@@ -68,6 +68,8 @@ QString actionName(ShotWindow::Action action)
         return QStringLiteral("Settings");
     case ShotWindow::Action::Cancel:
         return QStringLiteral("Cancel");
+    case ShotWindow::Action::Translate:
+        return QStringLiteral("Translate");
     }
     return {};
 }

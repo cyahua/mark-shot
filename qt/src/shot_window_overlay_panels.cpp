@@ -126,6 +126,7 @@ void ShotWindow::updateTextEditorGeometry()
     }
     m_textEditor->setGeometry(keepEditorInsideWindow(QRect(editorTopLeft, QSize(editorWidth, editorHeight))));
     m_textEditor->ensureCursorVisible();
+    applySnowTextEditorGeometryIfEnabled();
 }
 
 /// @brief 根据当前工具和窗口状态刷新工具栏按钮选中态

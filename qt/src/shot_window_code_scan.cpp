@@ -85,6 +85,7 @@ void ShotWindow::scanCodeSelection()
     }
 
     auto *window = createCodeScanResultWindow(markshot::code_scan::resultsText(parsed.results));
+    placeCodeScanResultWindow(window, m_captureScreen ? m_captureScreen.data() : screen());
     window->show();
     window->raise();
     window->activateWindow();

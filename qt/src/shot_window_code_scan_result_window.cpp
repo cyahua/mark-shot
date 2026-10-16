@@ -92,4 +92,24 @@ QWidget *createCodeScanResultWindow(QString text)
     return new CodeScanResultWindow(std::move(text));
 }
 
+void placeCodeScanResultWindow(QWidget *window, QScreen *screen)
+{
+    if (!window) {
+        return;
+    }
+    // 1. 优先放到选区所在屏幕，避免多屏时结果总是出现在主屏
+    QScreen *target = screen;
+    if (!target) {
+        target = QGuiApplication::screenAt(QCursor::pos());
+    }
+    if (!target) {
+        target = QGuiApplication::primaryScreen();
+    }
+    if (!target) {
+        return;
+    }
+    const QRect available = target->availableGeometry();
+    window->move(available.center() - window->rect().center());
+}
+
 }  // namespace markshot::shot

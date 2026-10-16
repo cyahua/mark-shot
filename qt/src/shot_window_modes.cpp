@@ -280,6 +280,8 @@ QPushButton *ShotWindow::addToolbarButton(Action action, const QString &shortcut
         connect(button, &QPushButton::clicked, this, [this] { startScrollCapture(); });
     } else if (action == Action::OcrCopy) {
         connect(button, &QPushButton::clicked, this, [this] { ocrCopySelection(); });
+    } else if (action == Action::Translate) {
+        connect(button, &QPushButton::clicked, this, [this] { translateSelection(); });
     } else if (action == Action::Copy) {
         connect(button, &QPushButton::clicked, this, [this] { copySelection(); });
     } else if (action == Action::Save) {
@@ -553,6 +555,10 @@ bool ShotWindow::eventFilter(QObject *watched, QEvent *event)
         return true;
     }
 
+    if (handleSnowTextEditorKeyIfEnabled(watched, event)) {
+        return true;
+    }
+
     if (watched == m_textEditor && event->type() == QEvent::KeyPress) {
         auto *keyEvent = static_cast<QKeyEvent *>(event);
         if (imageNavigationAvailable() && keyEvent->key() == Qt::Key_Control && !keyEvent->isAutoRepeat()) {
@@ -628,6 +634,7 @@ void ShotWindow::setStartupTool(StartupTool tool)
     }
     updateCursor();
     update();
+    routeCodeScannerToCursorScreenIfEnabled();
 }
 
 void ShotWindow::leaveStartupTool()
