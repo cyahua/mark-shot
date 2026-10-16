@@ -7,7 +7,8 @@ import argparse
 import os
 from pathlib import Path
 
-EXCLUDED_DIRS = {".git", "target", "vendor", "__pycache__", ".cache", "node_modules"}
+EXCLUDED_DIRS = {".git", ".doc", "docs", "target", "vendor", "__pycache__", ".cache", "node_modules"}
+EXCLUDED_ROOT_FILES = {"README.md", "README.zh-CN.md"}
 SUFFIXES = {".rs", ".cpp", ".h", ".c", ".js", ".py", ".qml", ".cmake", ".md", ".toml"}
 
 
@@ -22,8 +23,12 @@ def source_files(root: Path):
         ]
         for name in files:
             path = Path(directory) / name
-            if path.suffix in SUFFIXES or name == "CMakeLists.txt":
-                yield path
+            if path.suffix not in SUFFIXES and name != "CMakeLists.txt":
+                continue
+            relative = path.relative_to(root)
+            if len(relative.parts) == 1 and relative.name in EXCLUDED_ROOT_FILES:
+                continue
+            yield path
 
 
 def main() -> int:
