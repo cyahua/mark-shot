@@ -28,4 +28,13 @@ qreal pinnedTextSelectionTextWeight(const QString &text);
  */
 QRectF pinnedTextSelectionHighlightRect(QRectF tokenRect, const QString &text);
 
+/**
+ * 按显示列宽切出 token 中单个字符的图像矩形。
+ * @param tokenRect OCR token 原始矩形。
+ * @param text token 文本。
+ * @param characterIndex 字符下标，从 0 开始。
+ * @return 该字符的矩形；下标无效时返回空矩形。末字右缘贴齐 token 右缘。
+ */
+QRectF pinnedTextSelectionCharacterRect(const QRectF &tokenRect, const QString &text, int characterIndex);
+
 }  // namespace markshot::shot

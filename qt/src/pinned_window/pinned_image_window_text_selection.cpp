@@ -2,7 +2,6 @@
 
 #include "clipboard_image.h"
 #include "ocr_result.h"
-#include "pinned_window/pinned_text_selection_metrics.h"
 #include "pinned_window_top.h"
 
 #include <QApplication>
@@ -96,13 +95,26 @@ QRectF PinnedImageWindow::imageToWidget(QRectF imageRect) const
 std::optional<int> PinnedImageWindow::tokenAt(QPointF imagePoint) const
 {
     const QVector<OcrToken> &tokens = activeTokens();
+    std::optional<int> best;
+    qreal bestDistance = std::numeric_limits<qreal>::max();
     for (int i = 0; i < tokens.size(); ++i) {
-        const QRectF hitRect = selectionImageRectForToken(tokens.at(i)).adjusted(-2.0, -2.0, 2.0, 2.0);
-        if (hitRect.contains(imagePoint)) {
-            return i;
+        const QRectF rect = selectionImageRectForToken(tokens.at(i));
+        if (rect.isEmpty()) {
+            continue;
+        }
+        // 1. 重叠的检测框取离中心更近的字，避免前一个字的外扩挡住后一个字
+        if (!rect.adjusted(-1.0, -1.0, 1.0, 1.0).contains(imagePoint)) {
+            continue;
+        }
+        const qreal dx = imagePoint.x() - rect.center().x();
+        const qreal dy = imagePoint.y() - rect.center().y();
+        const qreal distance = dx * dx + dy * dy;
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            best = i;
         }
     }
-    return std::nullopt;
+    return best;
 }
 
 std::optional<int> PinnedImageWindow::closestToken(QPointF imagePoint) const
@@ -235,7 +247,8 @@ QString PinnedImageWindow::tokenRangeText(int first, int last) const
 
 QRectF PinnedImageWindow::selectionImageRectForToken(const OcrToken &token) const
 {
-    return pinnedTextSelectionHighlightRect(token.imageRect, token.text);
+    // 1. 拖选高亮使用字符切分后的检测框，不再向外补宽
+    return token.imageRect;
 }
 
 QVector<markshot::ocr::Token> PinnedImageWindow::sharedOcrTokens(const QVector<OcrToken> &tokens) const
@@ -254,7 +267,31 @@ QVector<markshot::ocr::Token> PinnedImageWindow::sharedOcrTokens(const QVector<O
 
 const QVector<PinnedImageWindow::OcrToken> &PinnedImageWindow::activeTokens() const
 {
-    return m_translationActive ? m_translatedTokens : m_ocrTokens;
+    if (m_translationActive) {
+        return m_translatedTokens;
+    }
+    return m_ocrSelectionTokens.isEmpty() ? m_ocrTokens : m_ocrSelectionTokens;
+}
+
+void PinnedImageWindow::selectTokenLine(int tokenIndex)
+{
+    const QVector<OcrToken> &tokens = activeTokens();
+    if (tokenIndex < 0 || tokenIndex >= tokens.size()) {
+        return;
+    }
+    const int line = tokens.at(tokenIndex).line;
+    int first = tokenIndex;
+    int last = tokenIndex;
+    for (int index = 0; index < tokens.size(); ++index) {
+        if (tokens.at(index).line != line) {
+            continue;
+        }
+        first = std::min(first, index);
+        last = std::max(last, index);
+    }
+    m_selectionAnchor = first;
+    m_selectionFocus = last;
+    update();
 }
 
 }  // namespace markshot::shot

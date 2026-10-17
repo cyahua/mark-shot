@@ -2,6 +2,7 @@
 
 #include "settings/settings_dialog.h"
 #include "ui/compact_toolbar.h"
+#include "ui/icon_manifest.h"
 
 namespace cfg = markshot::config;
 namespace shortcuts = markshot::shortcut;
@@ -199,6 +200,8 @@ QPushButton *ShotWindow::addToolbarButton(Action action, const QString &shortcut
     markshot::ui::ToolbarButtonSpec spec;
     spec.actionKey = markshot::ui::actionName(action);
     spec.icon = markshot::ui::makeToolIcon(action);
+    spec.iconName = markshot::ui::toolIconName(action);
+    spec.iconInk = action == Action::Save ? QColor(255, 255, 255) : QColor(229, 231, 235);
     spec.tooltip = QStringLiteral("%1 (%2)").arg(markshot::i18n::translate(spec.actionKey), shortcutText);
     if (action == Action::ScrollCapture && isGnomeWaylandSession() && !hasGnomeScrollHelper()) {
         spec.enabled = false;

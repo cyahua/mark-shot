@@ -7,6 +7,7 @@
 #include <QImage>
 #include <QJsonArray>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPixmap>
 #include <QPoint>
 #include <QPointF>
@@ -479,6 +480,21 @@ private:
     /// @param imageRect 图片显示矩形。
     /// @return 已接管边框绘制时返回 true。
     bool paintPinnedNonWindowChromeIfEnabled(QPainter &painter, const QRectF &imageRect);
+
+    // --- 新增：OCR 原文轻背景与逐字拖选 ---
+    QVector<OcrToken> m_ocrSelectionTokens;
+    /// @brief 在原图文字上绘制轻背景，不重绘识别文字。
+    /// @param painter 当前画笔。
+    /// @return 无返回值。
+    void paintOcrRecognitionPlatesIfEnabled(QPainter &painter) const;
+    /// @brief 选中同一行的全部可拖选文字。
+    /// @param tokenIndex 命中的文字下标。
+    /// @return 无返回值。
+    void selectTokenLine(int tokenIndex);
+    /// @brief 返回当前拖选在窗口坐标中的区域。
+    /// @param viewport 需要裁剪到的窗口范围。
+    /// @return 选区路径，没有选区时为空。
+    QPainterPath textSelectionWidgetPath(QRectF viewport) const;
 };
 
 }  // namespace markshot::shot

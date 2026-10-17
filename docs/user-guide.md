@@ -222,6 +222,9 @@ Drawing tips:
   applies to straight and curved shafts without breaking the arrowheads.
 - Hold `Ctrl` while drawing a rectangle / ellipse to constrain to a square /
   circle.
+- Scrolling the wheel immediately after finishing a shape annotation (lines, rectangles, ellipses, markers, arrows, numbers, magnifiers) automatically selects the newly drawn shape and adjusts its stroke width or scale without requiring an explicit switch to the Select tool.
+- Text annotations calculate their bounding box based on natural unconstrained text width first, preventing editor margins from prematurely wrapping single lines into two and eliminating asymmetrical trailing padding.
+- Marker annotations adjust outline thickness dynamically according to the stroke width setting when unfilled.
 - Scroll the wheel while a tool is active to adjust stroke width, text size,
   number scale, or mosaic block size (live preview).
 - Under `Select`, scroll to zoom the canvas and hold the middle button to pan;
@@ -270,13 +273,14 @@ rounded corners, and a soft shadow to saved / copied / uploaded images.
 
 | Gesture / Shortcut | Behaviour |
 | :--- | :--- |
-| left-drag | reposition the sticker |
+| left-drag | reposition sticker (blank areas) / character-precise drag text selection |
 | wheel | scale proportionally |
-| double left click / `Esc` | close |
+| double left click | select the entire line when clicking recognized text; close sticker in blank areas |
+| `Esc` | close |
 | right click | context menu (rotate, zoom, always-on-top, copy text, translate, save, copy, close) |
 
-OCR text inside a pinned window is selectable and copyable (`Ctrl+C` /
-context menu). Translation (OpenAI-compatible, Google Gemini, Anthropic
+Pinned sticker windows support high-precision **sub-character text selection** and copying (`Ctrl+C` / context menu). Recognized text is highlighted with a soft, rounded plate underlay behind original pixels without overwriting or redrawing source text. Selection highlights use a seamless, uniform wash layer that is cleanly subtracted from the underlay plates to prevent muddy multi-layer opacity blending. Translation
+(OpenAI-compatible, Google Gemini, Anthropic
 Claude, Tencent, Baidu, or Youdao) renders the translated text back onto the
 image at the original layout positions. See the [translation provider guide](translation-providers.md) for
 provider selection and credentials.

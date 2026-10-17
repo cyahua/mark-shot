@@ -4,3 +4,9 @@
 __pycache__/
 *.pyc
 .cache/
+/.ace-tool/
+/CMakeFiles/
+/deb-root/
+/dist/
+/packaging/
+

@@ -2,6 +2,7 @@
 
 #include "pinned_window/pinned_layer_shell_drag_preview.h"
 
+#include <QImage>
 #include <QPainterPath>
 #include <QPen>
 #include <QPointer>
@@ -10,6 +11,58 @@
 #include <algorithm>
 
 namespace markshot::shot {
+namespace {
+
+/**
+ * 把路径画成均匀色块。重叠区域只保留一层颜色，再整体套上透明度。
+ * @param painter 目标画笔。
+ * @param path 要填充的路径。
+ * @param color 不透明时的颜色，透明度由 alpha 统一控制。
+ * @param alpha 整层透明度，0 到 255。
+ * @param clearPath 需要从色块中挖掉的路径，可为空。
+ * @return 无返回值。
+ */
+void paintSolidWash(QPainter &painter,
+                    const QPainterPath &path,
+                    const QColor &color,
+                    int alpha,
+                    const QPainterPath *clearPath)
+{
+    if (path.isEmpty() || alpha <= 0) {
+        return;
+    }
+
+    const qreal dpr = std::max<qreal>(1.0, painter.device() ? painter.device()->devicePixelRatioF() : 1.0);
+    const QRectF bounds = path.controlPointRect().adjusted(-2.0, -2.0, 2.0, 2.0);
+    if (bounds.isEmpty()) {
+        return;
+    }
+
+    // 1. 先用完全不透明的颜色铺满，重叠处不会越叠越深
+    QImage layer(qCeil(bounds.width() * dpr), qCeil(bounds.height() * dpr), QImage::Format_ARGB32_Premultiplied);
+    layer.setDevicePixelRatio(dpr);
+    layer.fill(Qt::transparent);
+    QPainter layerPainter(&layer);
+    layerPainter.setRenderHint(QPainter::Antialiasing, true);
+    layerPainter.translate(-bounds.topLeft());
+    layerPainter.setPen(Qt::NoPen);
+    layerPainter.setBrush(QColor(color.red(), color.green(), color.blue()));
+    layerPainter.drawPath(path);
+    if (clearPath && !clearPath->isEmpty()) {
+        layerPainter.setCompositionMode(QPainter::CompositionMode_Clear);
+        layerPainter.setBrush(Qt::black);
+        layerPainter.drawPath(*clearPath);
+    }
+    layerPainter.end();
+
+    // 2. 整层只乘一次透明度
+    painter.save();
+    painter.setOpacity(painter.opacity() * (alpha / 255.0));
+    painter.drawImage(bounds.topLeft(), layer);
+    painter.restore();
+}
+
+}  // namespace
 
 void PinnedImageWindow::paintEvent(QPaintEvent *)
 {
@@ -40,6 +93,7 @@ void PinnedImageWindow::paintImageContents(QPainter &painter, QRectF viewport)
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     const QRectF imageRect = displayedImageRect();
     painter.drawPixmap(imageRect, m_pixmap, QRectF(QPointF(0.0, 0.0), QSizeF(m_pixmap.size())));
+    paintOcrRecognitionPlatesIfEnabled(painter);
     if (m_translationActive) {
         drawTranslationOverlay(painter);
     }
@@ -65,15 +119,71 @@ void PinnedImageWindow::paintImageContents(QPainter &painter, QRectF viewport)
         return;
     }
 
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setPen(Qt::NoPen);
+    paintSolidWash(painter, textSelectionWidgetPath(viewport), QColor(72, 132, 245), 96, nullptr);
+    drawBorder();
+}
+
+void PinnedImageWindow::paintOcrRecognitionPlatesIfEnabled(QPainter &painter) const
+{
+    // 识别结果只托一层轻背景，原文像素继续显示，不再把识别文字画回去
+    if (m_translationActive || m_ocrTokens.isEmpty()) {
+        return;
+    }
+
+    QPainterPath plates;
+    plates.setFillRule(Qt::WindingFill);
+    QRectF band;
+    int bandLine = -1;
+    const auto flush = [this, &plates, &band] {
+        if (band.isNull()) {
+            return;
+        }
+        // 1. 内边距用窗口像素，避免图片缩放后背景框相对字形漂移
+        const QRectF plate = imageToWidget(band).adjusted(-4.0, -2.0, 4.0, 2.0);
+        plates.addRoundedRect(plate, 5.0, 5.0);
+        band = QRectF();
+    };
+    for (const OcrToken &token : m_ocrTokens) {
+        if (token.imageRect.isEmpty() || token.text.trimmed().isEmpty()) {
+            continue;
+        }
+        if (band.isNull()) {
+            band = token.imageRect;
+            bandLine = token.line;
+            continue;
+        }
+        const qreal gap = token.imageRect.left() - band.right();
+        const qreal limit = std::max<qreal>(8.0, std::min(band.height(), token.imageRect.height()) * 0.65);
+        const bool sameLine = token.line == bandLine
+            && token.imageRect.top() < band.bottom()
+            && token.imageRect.bottom() > band.top();
+        if (sameLine && gap <= limit) {
+            band = band.united(token.imageRect);
+        } else {
+            flush();
+            band = token.imageRect;
+            bandLine = token.line;
+        }
+    }
+    flush();
+
+    // 2. 选区单独着色，先从浅底里挖掉，两种颜色不再叠在一起
+    const QPainterPath selection = textSelectionWidgetPath(QRectF(rect()));
+    paintSolidWash(painter, plates, QColor(248, 250, 252), 72, selection.isEmpty() ? nullptr : &selection);
+}
+
+QPainterPath PinnedImageWindow::textSelectionWidgetPath(QRectF viewport) const
+{
+    QPainterPath selectionPath;
+    if (!hasTextSelection()) {
+        return selectionPath;
+    }
+
+    selectionPath.setFillRule(Qt::WindingFill);
     const auto [first, last] = selectionRange();
     const QVector<OcrToken> &tokens = activeTokens();
-    // 相邻词的 OCR 检测框之间有缝隙、首尾还常常互相重叠：逐框绘制半透明
-    // 高亮会出现断续的空隙和重叠处颜色加深。这里把选中的词框按行合并成
-    // 连续条带，全部并入一条路径后一次填充，效果与浏览器文本选中一致。
-    QPainterPath selectionPath;
-    selectionPath.setFillRule(Qt::WindingFill);
+    // 相邻词的 OCR 检测框之间有缝隙、首尾还常常互相重叠。这里按行收成一条带，
+    // 再整层填一次色，重叠处保持同一透明度。
     QRectF lineBand;
     const auto flushLineBand = [this, &selectionPath, &lineBand, viewport] {
         if (!lineBand.isNull()) {
@@ -90,7 +200,6 @@ void PinnedImageWindow::paintImageContents(QPainter &painter, QRectF viewport)
             lineBand = tokenRect;
             continue;
         }
-        // 垂直方向重叠超过较矮框一半即视为同一行，合并进当前条带
         const qreal overlapHeight = std::min(lineBand.bottom(), tokenRect.bottom())
             - std::max(lineBand.top(), tokenRect.top());
         if (overlapHeight >= std::min(lineBand.height(), tokenRect.height()) * 0.5) {
@@ -101,8 +210,7 @@ void PinnedImageWindow::paintImageContents(QPainter &painter, QRectF viewport)
         }
     }
     flushLineBand();
-    painter.fillPath(selectionPath, QColor(72, 132, 245, 96));
-    drawBorder();
+    return selectionPath;
 }
 
 }  // namespace markshot::shot

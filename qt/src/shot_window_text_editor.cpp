@@ -121,6 +121,8 @@ void ShotWindow::commitTextEditor()
             annotation->fontWeight = m_textEditor->font().weight();
             annotation->textItalic = m_textEditor->font().italic();
             copyEditorFontToAnnotationIfEnabled(*annotation);
+            // 2. 提交时按文字自然宽度收框，避免用编辑器外框把单行挤成两行
+            annotation->rect.setWidth(std::max(annotation->rect.width(), 100000.0));
             annotation->rect = textContentRect(*annotation, false);
             if (!annotation->points.isEmpty()) {
                 annotation->points[0] = annotation->rect.topLeft();
@@ -151,6 +153,8 @@ void ShotWindow::commitTextEditor()
         annotation.fontWeight = m_textEditor->font().weight();
         annotation.textItalic = m_textEditor->font().italic();
         copyEditorFontToAnnotationIfEnabled(annotation);
+        // 3. 新文字同样按自然宽度收框，编辑器宽度不作为换行限制
+        annotation.rect.setWidth(std::max(annotation.rect.width(), 100000.0));
         annotation.rect = textContentRect(annotation, false);
         m_textFontFamily = annotation.fontFamily;
         m_textWeight = annotation.fontWeight;

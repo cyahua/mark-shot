@@ -223,30 +223,24 @@ QVector<PinnedImageWindow::OcrToken> PinnedImageWindow::splitTokenForSelection(c
         return splitTokens;
     }
 
-    qreal totalWeight = 0.0;
-    QVector<qreal> weights;
-    weights.reserve(token.text.size());
-    for (const QChar ch : token.text) {
-        const qreal weight = pinnedTextSelectionCharacterWeight(ch);
-        weights.append(weight);
-        totalWeight += weight;
-    }
+    const qreal totalWeight = pinnedTextSelectionTextWeight(token.text);
     if (totalWeight <= 0.0 || token.imageRect.width() <= 0.0) {
         splitTokens.append(token);
         return splitTokens;
     }
 
-    qreal offset = 0.0;
     for (int i = 0; i < token.text.size(); ++i) {
-        const qreal nextOffset = offset + token.imageRect.width() * weights.at(i) / totalWeight;
         OcrToken splitToken = token;
         splitToken.text = token.text.mid(i, 1);
-        splitToken.imageRect = QRectF(token.imageRect.left() + offset,
-                                      token.imageRect.top(),
-                                      std::max<qreal>(1.0, nextOffset - offset),
-                                      token.imageRect.height());
+        splitToken.imageRect = pinnedTextSelectionCharacterRect(token.imageRect, token.text, i);
+        // 1. 零宽字符并入前一个字，避免空框被命中区域撑开后挡住相邻文字
+        if (splitToken.imageRect.isEmpty()) {
+            if (!splitTokens.isEmpty()) {
+                splitTokens.last().text += splitToken.text;
+            }
+            continue;
+        }
         splitTokens.append(splitToken);
-        offset = nextOffset;
     }
     return splitTokens;
 }

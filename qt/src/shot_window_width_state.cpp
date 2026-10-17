@@ -210,6 +210,10 @@ bool ShotWindow::setSelectedAnnotationWidth(int width, bool captureHistory)
             m_strokeWidth = newWidth;
             break;
         }
+        // 1. 标记工具下刚画完的形状还没被选中，滚轮改粗细要写回这个标记
+        if (m_tool == Tool::Marker && !m_annotations.isEmpty() && m_annotations.last().tool == Tool::Marker) {
+            m_annotations.last().width = newWidth;
+        }
     }
     if (m_draft.has_value()) {
         m_draft->width = currentToolWidth();

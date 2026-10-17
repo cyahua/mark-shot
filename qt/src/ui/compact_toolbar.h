@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QColor>
 #include <QIcon>
 #include <QSet>
 #include <QString>
@@ -31,6 +32,10 @@ struct ToolbarButtonSpec {
     QString tooltip;
     ToolbarButtonRole role = ToolbarButtonRole::Normal;
     bool enabled = true;
+    /// @brief 图标资源名，用于选中悬停时按主题色重绘前景
+    QString iconName;
+    /// @brief 常态前景色，无效时不随悬停切换
+    QColor iconInk;
 };
 
 /// @brief 【截图工具栏】【紧凑面板】负责按钮创建、自绘背景、分组排版、横纵切换和统一选中态
@@ -123,6 +128,11 @@ private:
     /// @brief 根据相邻分组的可见按钮决定分隔线显示
     /// @return 无返回值
     void refreshSeparators();
+    /// @brief 选中按钮悬停时把前景换成主题色的反色
+    /// @param button 工具栏按钮
+    /// @param hovered 指针是否在按钮上
+    /// @return 无返回值
+    void syncSelectedHoverIcon(QPushButton *button, bool hovered);
 
     QBoxLayout *m_layout = nullptr;
     ToolbarGrip *m_grip = nullptr;

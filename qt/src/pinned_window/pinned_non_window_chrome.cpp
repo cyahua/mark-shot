@@ -19,11 +19,8 @@ void presentPinnedImage(QWidget *window)
 
 void applyPinnedNonWindowLayerShellPolicy(markshot::layershell::FloatingOverlayConfig *config)
 {
-    if (!FEATURE_PINNED_NON_WINDOW_CHROME_ENABLED || !config) {
-        return;
-    }
-    config->activateOnShow = false;
-    config->keyboardInteractivity = markshot::layershell::KeyboardInteractivity::OnDemand;
+    Q_UNUSED(config);
+    // 显示位置继续走原来的 layer-shell 边距，不改锚点和激活策略
 }
 
 }  // namespace markshot::shot

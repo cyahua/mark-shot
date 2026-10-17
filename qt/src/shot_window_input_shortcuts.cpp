@@ -47,6 +47,7 @@ qreal annotationWidthWheelStepSize(ShotWindow::Tool tool)
     case ShotWindow::Tool::Highlighter:
     case ShotWindow::Tool::Rectangle:
     case ShotWindow::Tool::Ellipse:
+    case ShotWindow::Tool::Marker:
     case ShotWindow::Tool::Arrow:
     case ShotWindow::Tool::Magnifier:
     case ShotWindow::Tool::Laser:
@@ -120,6 +121,8 @@ void ShotWindow::wheelEvent(QWheelEvent *event)
         return;
     }
 
+    // 1. 【标注】【滚轮选中】粗细滚轮生效前，先选中当前工具刚画完的图形
+    selectLatestDrawnAnnotationForWheel();
     const QVector<int> selectedIds = selectedAnnotationIds();
     const bool editingAnnotationWidth = m_tool == Tool::Select && !selectedIds.isEmpty();
 
@@ -135,7 +138,10 @@ void ShotWindow::wheelEvent(QWheelEvent *event)
         return;
     }
 
-    const Annotation *firstSelectedAnnotation = editingAnnotationWidth ? annotationById(selectedIds.first()) : nullptr;
+    const Annotation *firstSelectedAnnotation = nullptr;
+    if (m_tool == Tool::Select && !selectedIds.isEmpty()) {
+        firstSelectedAnnotation = annotationById(selectedIds.first());
+    }
     const Tool widthTool = firstSelectedAnnotation ? firstSelectedAnnotation->tool : m_tool;
     const int wheelContext = static_cast<int>(widthTool) * 4096
         + (editingAnnotationWidth && firstSelectedAnnotation ? firstSelectedAnnotation->id : 0);
@@ -375,4 +381,55 @@ void ShotWindow::keyPressEvent(QKeyEvent *event)
         }
         break;
     }
+}
+
+namespace {
+
+// 滚轮改粗细时先选中刚画完的图形
+constexpr bool kSelectLatestDrawnOnWidthWheel = true;
+
+}
+
+/// @brief 滚轮开始调整粗细时，选中当前工具刚提交的图形。
+/// @return 已选中刚绘制的图形时返回 true。
+bool ShotWindow::selectLatestDrawnAnnotationForWheel()
+{
+    if (!kSelectLatestDrawnOnWidthWheel) {
+        return false;
+    }
+    // 1. 【标注】【滚轮选中】已有选中项、正在绘制或文字编辑中时不抢当前操作
+    if (m_mode != Mode::Editing || m_dragging || m_annotations.isEmpty() || !selectedAnnotationIds().isEmpty()) {
+        return false;
+    }
+    if (m_textEditor && m_textEditor->isVisible()) {
+        return false;
+    }
+    const Annotation &latest = m_annotations.last();
+    if (latest.id == 0 || latest.tool != m_tool) {
+        return false;
+    }
+    switch (latest.tool) {
+    case Tool::Line:
+    case Tool::Rectangle:
+    case Tool::Ellipse:
+    case Tool::Marker:
+    case Tool::Arrow:
+    case Tool::Number:
+    case Tool::Magnifier:
+        break;
+    case Tool::Move:
+    case Tool::Select:
+    case Tool::Pen:
+    case Tool::Highlighter:
+    case Tool::Text:
+    case Tool::Mosaic:
+    case Tool::Laser:
+        return false;
+    }
+    // 2. 【标注】【滚轮选中】切到选择工具后再写入选中，避免切换工具时清掉选中
+    const int id = latest.id;
+    setTool(Tool::Select);
+    setSelectedAnnotations({id});
+    updateAnnotationPropertyPanel();
+    return selectedAnnotationIds().contains(id);
 }

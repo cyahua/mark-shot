@@ -7,9 +7,20 @@
 - **Rust Core**: Selection geometry, image filters, scroll stitching, annotation history, and configuration now run in the Rust core. The Qt interface and platform capture stay in place.
 - **OCR Editor Space**: The recognition window drops the source-text chrome and moves the copy action up, leaving the remaining space to the editors.
 - **OCR Memory After Recognition**: ONNX sessions are released when recognition returns, and unused heap is returned so a long session does not keep the model footprint.
+- **Pinned Image Sub-Character Selection & OCR Plates**: Pinned stickers display subtle rounded plate underlays behind recognized text while keeping original image pixels intact. Text selection splits tokens into character-level bounds weighted by display column widths, zero-width characters merge into their neighbor, and double-clicking any token selects the entire line.
+- **Continuous Selection Wash**: Text highlight rendering fills continuous text bands in a single pass at uniform opacity without overlapping seams, and cuts the selection path out of the recognition plate so highlights never multiply into murky shades.
+- **Wheel Width on Newly Drawn Annotations**: Scrolling the mouse wheel immediately after finishing a shape annotation (lines, rectangles, ellipses, markers, arrows, numbers, magnifiers) automatically selects the newly drawn shape and adjusts its stroke width without requiring an explicit switch to the Select tool.
+- **Recent Font Memory in Text Annotations**: The font picker pins a "Recent" section at the top of the list, automatically remembering and surfacing recently used font families.
+- **Selection Translation Overlay**: Translating a region directly from the capture session overlays translated text onto the preview canvas in-place.
+- **Multi-Screen Code Scanner Follow**: Entering QR/barcode scanner mode dynamically routes to the display where the mouse cursor resides and claims session focus across displays.
 
 ### Bug Fixes
 
+- **Pinned Window Placement Consistency**: Pinned stickers explicitly clamp to the initial selection's top-left coordinates and re-assert geometry on show, preventing Wayland compositors from misplacing new pins at the screen center. Pin border rendering respects user-configured color and width without redundant hover shadows.
+- **Single-Line Text Box Wrapping**: Text boxes calculate their bounding rect based on natural unconstrained width first, preventing editor margins from prematurely wrapping single lines into two, and eliminating asymmetrical right padding.
+- **Immediate Selection Exit on Stop Recording**: Stopping a screen recording leaves the selection immediately while encoding finishes asynchronously in the background.
+- **Toolbar Active-Hover Contrast**: Compact toolbar buttons dynamically generate high-contrast inverted SVG icons when hovered in their active state against the highlight background.
+- **Settings Form Padding and SpinBox Controls**: Key sequence editor line edits and spin box inputs adjust padding and subcontrol placement to prevent overlapping text with clear and increment/decrement buttons.
 - **Bundled Window-Detection Helpers**: KDE and Windows helper scripts resolve next to the installed executable, including Windows files without an executable bit. Fixes #134.
 - **RapidOCR Model Type**: Each recognition task selects a model type the installed RapidOCR version accepts.
 - **Missing Recording Encoder**: Recording stops before capture when the selected encoder is not available.

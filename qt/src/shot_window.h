@@ -61,6 +61,14 @@ public:
     using Tool = markshot::shot::types::Tool;
     using DesktopApp = markshot::shot::types::DesktopApp;
     using ExtensionCommand = markshot::shot::types::ExtensionCommand;
+    using ArrowStyle = markshot::shot::types::ArrowStyle;
+    using ArrowLineStyle = markshot::shot::types::ArrowLineStyle;
+    using HighlighterStyle = markshot::shot::types::HighlighterStyle;
+    using MagnifierShape = markshot::shot::types::MagnifierShape;
+    using RectangleStyle = markshot::shot::types::RectangleStyle;
+    using MosaicStyle = markshot::shot::types::MosaicStyle;
+    using MarkerShape = markshot::shot::types::MarkerShape;
+    using NumberStyle = markshot::shot::types::NumberStyle;
 
     explicit ShotWindow(QImage frozenFrame,
                         QString outputName,
@@ -95,16 +103,19 @@ public:
      * @return 无返回值。
      */
     void beginRegionRecordingSelection(markshot::recording::RecordingOptions options);
+    markshot::shot::types::StartupTool startupTool() const;
+    QScreen *captureScreen() const;
+    void applyRoutedStartupTool(markshot::shot::types::StartupTool tool);
+    void translateSelection();
 
 signals:
     void selectionActivated(ShotWindow *window);
     void displayCaptureSnapshotRequested(ShotWindow *window);
     void displayCaptureEditRequested(ShotWindow *window, markshot::display_capture::Target target);
     void sessionCancelRequested();
-    /// @brief 请求暂时隐藏或恢复同一会话中其他屏幕的截图覆盖层
-    /// @param window 发起请求的窗口
-    /// @param suspended true 表示隐藏，false 表示恢复显示
     void peerOverlaysSuspendRequested(ShotWindow *window, bool suspended);
+    void codeScannerRouteRequested(ShotWindow *window);
+    void codeScannerClaimRequested(ShotWindow *window);
 
 protected:
     /// @brief 在实际输入处理后同步光标，并处理抓取中断
@@ -124,6 +135,14 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private:
+    using Mode = markshot::shot::types::Mode;
+    using StartupTool = markshot::shot::types::StartupTool;
+    using WheelPreview = markshot::shot::types::WheelPreview;
+    using SelectionDrag = markshot::shot::types::SelectionDrag;
+    using Annotation = markshot::shot::types::Annotation;
+    using HistorySnapshot = markshot::shot::types::HistorySnapshot;
+    using LaserStroke = markshot::shot::types::LaserStroke;
+
     void scheduleInitialSelectionRepaint(const QRegion &region);
     void flushInitialSelectionRepaint();
     QRegion initialSelectionDirtyRegion(const QRectF &previousSelection,
@@ -150,78 +169,21 @@ private:
     /// @return 无返回值
     void drawSelectionAdjustmentOverlay(QPainter &painter) const;
 
-    using Mode = markshot::shot::types::Mode;
-    using StartupTool = markshot::shot::types::StartupTool;
-    using WheelPreview = markshot::shot::types::WheelPreview;
-
-public:
-    using ArrowStyle = markshot::shot::types::ArrowStyle;
-    using ArrowLineStyle = markshot::shot::types::ArrowLineStyle;
-    using HighlighterStyle = markshot::shot::types::HighlighterStyle;
-    using MagnifierShape = markshot::shot::types::MagnifierShape;
-    using RectangleStyle = markshot::shot::types::RectangleStyle;
-    using MosaicStyle = markshot::shot::types::MosaicStyle;
-    using MarkerShape = markshot::shot::types::MarkerShape;
-    using NumberStyle = markshot::shot::types::NumberStyle;
-
-
-private:
-
-    using SelectionDrag = markshot::shot::types::SelectionDrag;
-    using Annotation = markshot::shot::types::Annotation;
-    using HistorySnapshot = markshot::shot::types::HistorySnapshot;
-    using LaserStroke = markshot::shot::types::LaserStroke;
-
     void initializeToolbar();
     void initializeImageScrollBars();
     void initializeActionToolbar();
     void initializePropertyFontPanel();
-    /// @brief 创建属性面板中矩形、马赛克、箭头、荧光笔与序号的样式下拉框
-    /// @param propertyLayout 属性面板布局
-    /// @return 无返回值
     void initializePropertyStyleCombos(QHBoxLayout *propertyLayout);
     void initializeShortcuts();
     void initializeTransientPanels();
-    /// @brief 创建内联文字编辑器并配置输入、样式与事件处理
-    /// @return 无返回值
     void initializeTextEditor();
     void initializeLaserTimer();
     void initializeWindowDetection(QVector<markshot::WindowInfo> windowInfos, bool enabled);
-    /**
-     * 【截图】【区域识别】在后台分析冻结截图，生成 UI 级候选区域。
-     * @return 无返回值。
-     */
     void initializeRegionDetection();
-    /**
-     * 【截图】【区域识别】接入后台检测结果，并注入窗口矩形。
-     * @param detector 后台线程生成的检测器。
-     * @return 无返回值。
-     */
     void applyRegionDetector(std::shared_ptr<markshot::region_detection::RegionDetector> detector);
-    /**
-     * 【截图】【区域识别】查询当前指针下的 UI 或窗口候选。
-     * @param imagePoint 图像像素坐标。
-     * @return 候选矩形；没有命中时为空。
-     */
     std::optional<QRect> hoveredRegionAt(QPoint imagePoint);
-    /**
-     * 【截图】【区域识别】更新悬停高亮并返回需要重绘的区域。
-     * @param rect 新的悬停矩形。
-     * @return 脏区域。
-     */
     QRegion applyHoveredRect(const std::optional<QRect> &rect);
-    /**
-     * 【截图】【区域识别】按当前指针刷新悬停高亮。
-     * @param imagePoint 图像像素坐标。
-     * @return 脏区域。
-     */
     QRegion refreshHoveredRegion(QPoint imagePoint);
-    /**
-     * 【截图】【区域识别】用滚轮在父子区域之间切换。
-     * @param imagePoint 图像像素坐标。
-     * @param direction 正值扩大到父区域，负值缩小到子区域。
-     * @return 已处理时返回 true。
-     */
     bool cycleHoveredRegion(QPoint imagePoint, int direction);
     QPushButton *addToolbarButton(Action action, const QString &shortcutText, QWidget *parentToolbar = nullptr);
     QVector<DesktopApp> imageDesktopApps() const;
@@ -731,83 +693,21 @@ private:
     QFutureWatcher<std::shared_ptr<markshot::region_detection::RegionDetector>> *m_regionDetectorWatcher = nullptr;
     QPointF m_selectionClickStart;
 
-    // --- 新增：扫码跟随鼠标所在屏幕 ---
     bool m_applyingRoutedStartupTool = false;
-    /// @brief 扫码模式不在光标屏幕时，请求会话转发。
-    /// @return 无返回值。
     void routeCodeScannerToCursorScreenIfEnabled();
-    /// @brief 光标进入本覆盖层时，请求接管其他屏幕的扫码模式。
-    /// @param event 当前窗口事件。
-    /// @return 无返回值。
     void claimCodeScannerFromPeersIfEnabled(QEvent *event);
-
-public:
-    /// @brief 返回当前选区前辅助工具。
-    /// @return 当前辅助工具。
-    markshot::shot::types::StartupTool startupTool() const;
-    /// @brief 返回本覆盖层对应的截图屏幕。
-    /// @return 截图屏幕，尚未记录时返回窗口当前屏幕。
-    QScreen *captureScreen() const;
-    /// @brief 由会话把辅助工具应用到光标所在覆盖层，不再二次转发。
-    /// @param tool 要应用的辅助工具。
-    /// @return 无返回值。
-    void applyRoutedStartupTool(markshot::shot::types::StartupTool tool);
-    /// @brief 对当前选区执行 OCR 并把译文画回预览。
-    /// @return 无返回值。
-    void translateSelection();
-
-signals:
-    /// @brief 扫码模式落在了非光标屏幕，请求会话转发到光标所在覆盖层。
-    /// @param window 当前收到快捷键的覆盖层。
-    void codeScannerRouteRequested(ShotWindow *window);
-    /// @brief 光标进入本覆盖层时，请求接管其他屏幕上的扫码模式。
-    /// @param window 光标所在覆盖层。
-    void codeScannerClaimRequested(ShotWindow *window);
-
-private:
-    /// @brief 记录用户选中的字体系列。
-    /// @param fontFamily 字体系列名称。
-    /// @return 无返回值。
     void rememberRecentTextFontIfEnabled(const QString &fontFamily);
-    /// @brief 在字体列表顶部刷新最近使用分区。
-    /// @return 无返回值。
     void refreshRecentTextFontsIfEnabled();
-    /// @brief 点击最近使用标题时不关闭字体面板。
-    /// @param item 被点击的列表项。
-    /// @return 该行是分区标题时返回 true。
     bool ignoreRecentFontHeaderClickIfEnabled(QListWidgetItem *item) const;
-    /// @brief 更新标注删除按钮的悬停状态。
-    /// @param pointer 指针在窗口中的位置。
-    /// @return 无返回值。
     void updateAnnotationDeleteButtonHoverIfEnabled(QPointF pointer);
-    /// @brief 绘制带悬停反馈的标注删除按钮。
-    /// @param painter 绘制器。
-    /// @param deleteButton 按钮矩形。
-    /// @return 已绘制时返回 true。
     bool paintAnnotationDeleteButtonIfEnabled(QPainter &painter, const QRectF &deleteButton) const;
-    /// @brief 按 snow 的文字输入规则处理按键。
-    /// @param watched 事件来源。
-    /// @param event 当前事件。
-    /// @return 已处理时返回 true。
     bool handleSnowTextEditorKeyIfEnabled(QObject *watched, QEvent *event);
-    /// @brief 文字变化时让编辑器跟着内容增高。
-    /// @return 无返回值。
     void connectSnowTextEditorGeometryIfEnabled();
-    /// @brief 去掉文字编辑器的虚线框，改用实际字体绘制。
-    /// @return 无返回值。
     void applySnowTextEditorChromeIfEnabled();
-    /// @brief 按文字内容调整编辑器尺寸。
-    /// @return 无返回值。
     void applySnowTextEditorGeometryIfEnabled();
-    /// @brief 把编辑器字体改成和成图相同的字体。
-    /// @return 无返回值。
     void applyEditorDisplayFontIfEnabled();
-    /// @brief 提交时用编辑器记录的字体覆盖解析后的字体名。
-    /// @param annotation 正在提交的文字标注。
-    /// @return 无返回值。
     void copyEditorFontToAnnotationIfEnabled(Annotation &annotation);
-    /// @brief 停止录制后退出选区，编码留在后台完成。
-    /// @return 停止请求已提交时返回 true。
+    bool selectLatestDrawnAnnotationForWheel();
     bool stopActiveRecordingAndExitSelectionIfEnabled();
     bool m_annotationDeleteButtonHovered = false;
     bool m_updatingSnowTextEditorGeometry = false;

@@ -1,5 +1,6 @@
 #include "ui/compact_toolbar.h"
 
+#include "ui/svg_icon.h"
 #include "ui/toolbar_grip.h"
 
 #include <QBoxLayout>
@@ -177,6 +178,12 @@ QPushButton *CompactToolbar::addButton(const ToolbarButtonSpec &spec)
         button->setProperty("role", role);
     }
     button->setEnabled(spec.enabled);
+    if (!spec.iconName.isEmpty()) {
+        button->setProperty("iconName", spec.iconName);
+    }
+    if (spec.iconInk.isValid()) {
+        button->setProperty("iconInk", spec.iconInk);
+    }
 
     // 2. 加入当前分组并监听显隐，用于维护分隔线
     button->installEventFilter(this);
@@ -252,6 +259,7 @@ void CompactToolbar::setActiveActions(const QSet<QString> &activeKeys)
             groupButton->setProperty("active", active);
             groupButton->style()->unpolish(groupButton);
             groupButton->style()->polish(groupButton);
+            syncSelectedHoverIcon(groupButton, groupButton->underMouse());
             groupButton->update();
         }
     }
@@ -275,7 +283,30 @@ bool CompactToolbar::eventFilter(QObject *watched, QEvent *event)
         && qobject_cast<QPushButton *>(watched)) {
         refreshSeparators();
     }
+    if (auto *button = qobject_cast<QPushButton *>(watched)) {
+        if (event->type() == QEvent::Enter || event->type() == QEvent::HoverEnter) {
+            syncSelectedHoverIcon(button, true);
+        } else if (event->type() == QEvent::Leave || event->type() == QEvent::HoverLeave) {
+            syncSelectedHoverIcon(button, false);
+        }
+    }
     return QWidget::eventFilter(watched, event);
+}
+
+void CompactToolbar::syncSelectedHoverIcon(QPushButton *button, bool hovered)
+{
+    if (!button) {
+        return;
+    }
+    const QString iconName = button->property("iconName").toString();
+    const QColor normalInk = button->property("iconInk").value<QColor>();
+    if (iconName.isEmpty() || !normalInk.isValid()) {
+        return;
+    }
+    // 1. 选中且悬停时前景取主题色的反色，离开后恢复常态前景
+    const bool selectedHover = button->isEnabled() && button->property("active").toBool() && hovered;
+    const QColor ink = selectedHover ? QColor(0x04, 0x2F, 0x2E) : normalInk;
+    button->setIcon(makeSvgIcon(iconName, ink));
 }
 
 void CompactToolbar::refreshSeparators()

@@ -275,17 +275,13 @@ void ShotWindow::drawMarker(QPainter &painter, const Annotation &annotation, boo
         return;
     }
 
+    const qreal scale = annotationSizeScale(widgetCoordinates);
+    const qreal penWidth = std::max<qreal>(1.5, annotation.width * scale);
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-    if (annotation.filled) {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(annotation.color);
-    } else {
-        // 非填充：按形状尺寸取比例线宽描边，空心展示轮廓
-        const qreal penWidth = std::max(1.5, std::min(rect.width(), rect.height()) * 0.08);
-        painter.setPen(QPen(annotation.color, penWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        painter.setBrush(Qt::NoBrush);
-    }
+    // 线宽跟标注粗细走，滚轮和滑条改完能直接看到轮廓变粗
+    painter.setPen(QPen(annotation.color, penWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setBrush(annotation.filled ? QBrush(annotation.color) : QBrush(Qt::NoBrush));
     painter.drawPath(path);
     painter.restore();
 }

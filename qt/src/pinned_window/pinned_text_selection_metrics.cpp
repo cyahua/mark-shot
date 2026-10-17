@@ -94,4 +94,26 @@ QRectF pinnedTextSelectionHighlightRect(QRectF tokenRect, const QString &text)
     return tokenRect;
 }
 
+QRectF pinnedTextSelectionCharacterRect(const QRectF &tokenRect, const QString &text, int characterIndex)
+{
+    if (characterIndex < 0 || characterIndex >= text.size() || !tokenRect.isValid()) {
+        return {};
+    }
+    const qreal totalWeight = pinnedTextSelectionTextWeight(text);
+    if (totalWeight <= 0.0 || tokenRect.width() <= 0.0) {
+        return characterIndex == 0 ? tokenRect : QRectF();
+    }
+
+    // 1. 按列宽从左累加，零宽字符不占水平位置
+    qreal offset = 0.0;
+    for (int index = 0; index < characterIndex; ++index) {
+        offset += tokenRect.width() * pinnedTextSelectionCharacterWeight(text.at(index)) / totalWeight;
+    }
+    const qreal width = tokenRect.width() * pinnedTextSelectionCharacterWeight(text.at(characterIndex)) / totalWeight;
+    const qreal left = tokenRect.left() + offset;
+    // 2. 末字右缘贴齐检测框，避免比例切分后和原文错开
+    const qreal right = characterIndex == text.size() - 1 ? tokenRect.right() : left + width;
+    return QRectF(left, tokenRect.top(), std::max<qreal>(0.0, right - left), tokenRect.height());
+}
+
 }  // namespace markshot::shot

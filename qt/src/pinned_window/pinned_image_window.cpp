@@ -99,15 +99,22 @@ PinnedImageWindow::PinnedImageWindow(QImage image, std::optional<QPoint> initial
         }
         m_scale = static_cast<qreal>(targetSize.width()) / std::max(1, m_displayBaseSize.width());
         setFixedSize(targetSize);
-        const QPoint centeredTopLeft = screen->availableGeometry().center() - rect().center();
-        move(clampedInitialTopLeft(initialTopLeft.value_or(centeredTopLeft), targetSize, screen));
+        // 1. 【钉图】【初始位置】有选区时贴在选区左上角，不用窗口创建后的 pos，避免合成器先把它放到屏幕中间
+        const QPoint fallbackTopLeft(screen->availableGeometry().center().x() - targetSize.width() / 2,
+                                     screen->availableGeometry().center().y() - targetSize.height() / 2);
+        const QPoint topLeft = clampedInitialTopLeft(initialTopLeft.value_or(fallbackTopLeft), targetSize, screen);
+        move(topLeft);
+        m_logicalGeometry = QRect(topLeft, targetSize);
     } else {
         setFixedSize(targetSize);
         if (initialTopLeft.has_value()) {
             move(*initialTopLeft);
+            m_logicalGeometry = QRect(*initialTopLeft, targetSize);
         }
     }
-    m_logicalGeometry = QRect(pos(), size());
+    if (!m_logicalGeometry.isValid()) {
+        m_logicalGeometry = QRect(pos(), size());
+    }
     setProperty("markShotPinnedGeometry", m_logicalGeometry);
     applyPinnedWindowTopState(this, m_config.alwaysOnTop);
     initializeNativeResize();
@@ -141,6 +148,23 @@ bool PinnedImageWindow::event(QEvent *event)
             m_layerShellDragPreview->deleteLater();
             m_layerShellDragPreview = nullptr;
         }
+    }
+    if (event->type() == QEvent::Show && m_logicalGeometry.isValid() && !m_logicalGeometry.isEmpty()) {
+        const QRect desired = m_logicalGeometry;
+        // 1. 【钉图】【显示位置】窗口映射后合成器可能把它放到屏幕中间，再写回选区位置
+        QTimer::singleShot(0, this, [this, desired] {
+            if (m_moving || m_recreating || !m_logicalGeometry.isValid()) {
+                return;
+            }
+            const QRect geometry = m_logicalGeometry.isValid() ? m_logicalGeometry : desired;
+            if (pinnedWindowHasLayerShellTop(this)) {
+                setPinnedGeometry(geometry, false);
+                return;
+            }
+            if (pos() != geometry.topLeft() || size() != geometry.size()) {
+                setGeometry(geometry);
+            }
+        });
     }
     const bool shouldRaise = event->type() == QEvent::WindowDeactivate
         || event->type() == QEvent::ActivationChange
@@ -337,9 +361,7 @@ void PinnedImageWindow::mouseDoubleClickEvent(QMouseEvent *event)
             ? tokenAt(widgetToImage(event->position()))
             : std::nullopt;
         if (token) {
-            m_selectionAnchor = *token;
-            m_selectionFocus = *token;
-            update();
+            selectTokenLine(*token);
             event->accept();
             return;
         }
@@ -465,6 +487,7 @@ void PinnedImageWindow::rotateImage(qreal degrees)
     m_displayBaseSize = displayBaseSizeForPixmap();
     clearTextSelection();
     m_ocrTokens.clear();
+    m_ocrSelectionTokens.clear();
     m_translatedTokens.clear();
     m_translationOverlayTokens.clear();
     m_translationActive = false;

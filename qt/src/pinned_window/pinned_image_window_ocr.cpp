@@ -140,6 +140,7 @@ void PinnedImageWindow::applyOcrOutput(const QByteArray &output, const QByteArra
     }
 
     m_ocrTokens = tokens;
+    m_ocrSelectionTokens = selectableTranslationTokens(tokens);
     m_translatedTokens.clear();
     m_translationOverlayTokens.clear();
     m_translationActive = false;

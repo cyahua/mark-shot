@@ -7,7 +7,21 @@ import argparse
 import os
 from pathlib import Path
 
-EXCLUDED_DIRS = {".git", ".doc", "docs", "target", "vendor", "__pycache__", ".cache", "node_modules"}
+EXCLUDED_DIRS = {
+    ".git",
+    ".doc",
+    ".ace-tool",
+    "docs",
+    "target",
+    "vendor",
+    "__pycache__",
+    ".cache",
+    "node_modules",
+    "deb-root",
+    "dist",
+    "packaging",
+    "CMakeFiles",
+}
 EXCLUDED_ROOT_FILES = {"README.md", "README.zh-CN.md"}
 SUFFIXES = {".rs", ".cpp", ".h", ".c", ".js", ".py", ".qml", ".cmake", ".md", ".toml"}
 

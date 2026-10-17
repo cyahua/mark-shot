@@ -149,11 +149,13 @@ qt_add_executable(mark-shot-compact-toolbar-test
     tests/compact_toolbar_test.cpp
     src/ui/compact_toolbar.cpp
     src/ui/compact_toolbar.h
+    src/ui/svg_icon.cpp
+    src/ui/svg_icon.h
     src/ui/toolbar_grip.cpp
     src/ui/toolbar_grip.h
 )
 target_include_directories(mark-shot-compact-toolbar-test PRIVATE src)
-target_link_libraries(mark-shot-compact-toolbar-test PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test)
+target_link_libraries(mark-shot-compact-toolbar-test PRIVATE Qt6::Core Qt6::Gui Qt6::Svg Qt6::Widgets Qt6::Test)
 add_test(NAME compact-toolbar COMMAND mark-shot-compact-toolbar-test)
 set_tests_properties(compact-toolbar PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 

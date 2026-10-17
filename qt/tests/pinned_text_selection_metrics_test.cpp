@@ -67,6 +67,40 @@ private slots:
 
         QCOMPARE(highlightRect, sourceRect);
     }
+
+    /**
+     * 验证词内拖选按列宽切开，末字右缘贴齐原框。
+     * @return 无返回值。
+     */
+    void splitsCharactersToTheTokenEdge()
+    {
+        const QRectF word(10.0, 4.0, 90.0, 20.0);
+        const QString text = QStringLiteral("iW");
+        const QRectF first = pinnedTextSelectionCharacterRect(word, text, 0);
+        const QRectF second = pinnedTextSelectionCharacterRect(word, text, 1);
+
+        QCOMPARE(first.left(), word.left());
+        QCOMPARE(first.width(), 45.0);
+        QCOMPARE(second.left(), 55.0);
+        QCOMPARE(second.right(), word.right());
+        QCOMPARE(first.height(), word.height());
+    }
+
+    /**
+     * 验证中文占两列、英文占一列时切分位置跟列宽一致。
+     * @return 无返回值。
+     */
+    void weightsFullWidthCharactersWider()
+    {
+        const QRectF word(0.0, 0.0, 90.0, 18.0);
+        const QString text = QStringLiteral("中A");
+        const QRectF first = pinnedTextSelectionCharacterRect(word, text, 0);
+        const QRectF second = pinnedTextSelectionCharacterRect(word, text, 1);
+
+        QCOMPARE(first.width(), 60.0);
+        QCOMPARE(second.left(), 60.0);
+        QCOMPARE(second.right(), word.right());
+    }
 };
 
 QTEST_APPLESS_MAIN(PinnedTextSelectionMetricsTest)

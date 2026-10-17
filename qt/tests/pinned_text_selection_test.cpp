@@ -73,11 +73,11 @@ private slots:
         QVERIFY(QTest::qWaitForWindowExposed(&window));
         const QPoint position = window.pos();
         // 1. 【贴图测试】【拖选】首次手势发生在尚未执行 OCR 的窗口
-        pointerEvent(window, QEvent::MouseButtonPress, QPoint(55 / dpr, 60 / dpr), Qt::LeftButton, Qt::LeftButton);
-        pointerEvent(window, QEvent::MouseMove, QPoint(150 / dpr, 60 / dpr), Qt::NoButton, Qt::LeftButton);
-        pointerEvent(window, QEvent::MouseButtonRelease, QPoint(150 / dpr, 60 / dpr), Qt::LeftButton);
+        pointerEvent(window, QEvent::MouseButtonPress, QPoint(42 / dpr, 60 / dpr), Qt::LeftButton, Qt::LeftButton);
+        pointerEvent(window, QEvent::MouseMove, QPoint(175 / dpr, 60 / dpr), Qt::NoButton, Qt::LeftButton);
+        pointerEvent(window, QEvent::MouseButtonRelease, QPoint(175 / dpr, 60 / dpr), Qt::LeftButton);
         // 2. 【贴图测试】【手势边界】释放后的指针移动不能改变等待中的选区
-        pointerEvent(window, QEvent::MouseMove, QPoint(55 / dpr, 60 / dpr));
+        pointerEvent(window, QEvent::MouseMove, QPoint(42 / dpr, 60 / dpr));
         QCOMPARE(window.pos(), position);
         // 3. 【贴图测试】【复制】等待异步识别后通过实际快捷键检查选区文字
         QApplication::clipboard()->clear();
