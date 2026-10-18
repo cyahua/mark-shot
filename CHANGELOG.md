@@ -13,6 +13,9 @@
 - **Recent Font Memory in Text Annotations**: The font picker pins a "Recent" section at the top of the list, automatically remembering and surfacing recently used font families.
 - **Selection Translation Overlay**: Translating a region directly from the capture session overlays translated text onto the preview canvas in-place.
 - **Multi-Screen Code Scanner Follow**: Entering QR/barcode scanner mode dynamically routes to the display where the mouse cursor resides and claims session focus across displays.
+- **Pinned Window Shadow Option**: Pinned stickers support an optional outer drop shadow (`pinnedWindow.shadow`), toggleable from the Pinned Settings page to provide a clean edge against desktop backgrounds.
+- **Window Boundary Definition**: Both the global settings dialog and the standalone image viewer window render crisp 1px borders adapting to dark and light palettes, preventing them from blending into surrounding surfaces.
+- **Scroll Drag Chrome Suppression**: The outer scrolling capture frame automatically hides while the drag handle is hovered or dragged, keeping extraneous control chrome out of stitched captures.
 
 ### Bug Fixes
 
@@ -29,6 +32,8 @@
 - **Windows Settings Paths**: Command paths stay unquoted unless the path itself requires quotes, and config saves retry while the destination file is briefly open.
 - **Plugin Status Layout**: Plugin status rows stack so long status text does not overflow the settings page.
 - **Editor Scrollbar**: The editor scrollbar is wider and uses an arrow cursor while hovering.
+- **Shape Marker Toolbar Hover Restoration**: Hovering over the shape marker tool preserves the active shape and inverts foreground ink dynamically, preventing the icon from reverting to the static star glyph.
+- **Manual Drag Recognized Region Reset**: Dragging past the click threshold clears auto-detected window regions immediately, ensuring manual selections do not snap back.
 
 ## 0.1.58 - 2026-10-13
 

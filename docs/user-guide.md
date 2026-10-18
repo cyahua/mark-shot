@@ -210,6 +210,7 @@ the annotation toolbar. Tools are switched with the number keys or the toolbar:
 | `H` | Highlighter | semi-transparent marker; freehand or straight line style |
 | `R` | Rectangle | box with `Stroke` / `Highlight` / `Invert` / `Spotlight` styles, rounded corners; Spotlight dims everything outside the box |
 | `E` | Ellipse | ellipse / circle |
+| `K` | Shape Marker | draw geometric shapes (stars, hearts, polygons, badges); toolbar icon follows the active shape |
 | `A` | Arrow | fletched, KDE, or bidirectional heads with solid, dashed, or dotted shafts |
 | `T` | Text | rich text; wheel or sliders resize; diagonal handles scale both, side handles adjust wrap; exact pt size, font family, bold / italic in the font panel |
 | `N` | Number | sequential numbered markers (Arabic, alpha, roman, Chinese, …) |
