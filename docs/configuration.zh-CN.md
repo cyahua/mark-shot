@@ -123,6 +123,7 @@ Mark Shot 在 Linux 上从 `~/.config/mark-shot/config.json` 读取应用配置�
   },
   "ocr": {
     "enabled": true,
+    "provider": "auto",
     "backend": "rapidocr",
     "command": "",
     "timeoutMs": 30000
@@ -222,7 +223,11 @@ Mark Shot 在 Linux 上从 `~/.config/mark-shot/config.json` 读取应用配置�
 | `scrollCapture.previewGap` | 数值/对象 | `5` | 外框和滚动预览面板之间的像素间距。预览面板会在外框周围选择第一个可用的不重叠位置。别名：`previewDistance`、`previewOffset`、`panelGap`；对象形式支持 `gap`。 |
 | `scrollCapture.hidePreviewDuringCapture` | 布尔值 | `false` | 控制滚动截图运行时是否强制隐藏预览面板。开启后，即使小选区周围有空间，也会隐藏预览面板并显示悬浮拖拽手柄；暂停时仍会显示预览面板。别名：`hidePreviewWhileCapturing`、`hidePanelDuringCapture`、`hideUiDuringCapture`；也支持 `scrollCapture.preview.hideWhileCapturing`。 |
 | `ocr.enabled` | 布尔值 | `true` | 控制 OCR 功能是否全局可用。本身不控制贴图后台 OCR 的自动触发。 |
+| `ocr.provider` | 字符串 | `"auto"` | OCR 提供方。推荐使用原生插件。可选值：`"auto"`（推荐默认，优先加载 RapidOCR 插件）、`"plugin:<providerId>"`（如 `"plugin:rapidocr"`）、`"builtin"`（内置 Tesseract 引擎）、`"helper"`（调用 Python 脚本）。 |
+| `ocr.command` | 字符串 | `""` | 自定义 OCR 命令行。非空时优先级最高。现已推荐使用原生 Provider 插件以提升执行性能并摆脱 Python 环境依赖，仅在接入专有识别管道时使用此项。 |
 | `ocr.resultPanel` | 布尔值/对象 | `true` | 控制主截图 OCR 流程是否打开可编辑结果窗口。对象形式支持 `enabled`、`show`、`visible` 或 `use`。别名包括 `resultWindow`、`ocrResultPanel`、`ocrResultWindow`。环境变量 `MARK_SHOT_OCR_RESULT_PANEL` 和 `MARK_SHOT_OCR_RESULT_WINDOW` 会覆盖配置文件。 |
+| `translation.provider` | 字符串 | `"auto"` | 翻译提供方。推荐使用原生插件。可选值：`"auto"`（按 OpenAI → Gemini → Claude → 腾讯 → 百度 → 有道顺序自动选用）、`"plugin:<providerId>"`（指定插件）、`"builtin"`、`"helper"`。详见[翻译服务提供方文档](translation-providers.zh-CN.md)。 |
+| `translation.command` | 字符串 | `""` | 自定义翻译命令行。非空时优先级最高。现更推荐使用原生 Provider 插件替代外部脚本。 |
 | `translation.autoAfterOcr` | 布尔值 | `false` | 控制贴图窗口 OCR 成功后是否自动启动翻译并缓存翻译结果。开启后，用户在右键菜单选择翻译时会瞬间渲染已缓存的翻译，无需临时发起网络请求。别名：`translation.auto` / `autoAfterOCR` 等。 |
 | `windowDetection.enabled` | 布尔值 | `true` | 控制窗口边界识别。设置为 `false` 后会同时关闭内置 X11 窗口识别和已配置的外挂检测脚本。 |
 | `windowDetection.env` | 对象 | `{}` | 传给窗口边界检测脚本的环境变量。别名：`environment`。<br>• **Niri 适配脚本**：自动读取 DMS bar、dock、frame 和 frame-exclusion 设置，也支持 `MARK_SHOT_NIRI_PANEL_EDGE`（`top`/`bottom`/`left`/`right`/`none`）以及像素偏移 `MARK_SHOT_NIRI_OFFSET_X/Y/WIDTH/HEIGHT`。<br>• **Hyprland 适配脚本**：支持 `MARK_SHOT_HYPRLAND_INCLUDE_INACTIVE`（`1`/`0`）以及像素偏移 `MARK_SHOT_HYPRLAND_OFFSET_X/Y/WIDTH/HEIGHT`。 |

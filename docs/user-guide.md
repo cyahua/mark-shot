@@ -464,14 +464,17 @@ the unsaved state.
   (`QScreen::grabWindow`), Windows (native WGC). Recording prefers the
   PipeWire portal and falls back automatically.
 
-Optional helpers:
+Optional capability backends:
+
+- **Native Provider Plugins (Recommended)**: Text recognition (RapidOCR), multi-provider translation (OpenAI / Gemini / Claude / Tencent / Baidu / Youdao), and barcode scanning (zxing-cpp) are now recommended via native provider plugins. They can be installed and enabled directly from the Plugins page in settings without requiring Python environments or external helper scripts.
+- **External Python Scripts (Legacy Fallback)**: External virtual environments are retained as a compatibility fallback when native plugins are unavailable:
 
 ```bash
-# OCR (RapidOCR / Tesseract)
+# OCR fallback script (RapidOCR / Tesseract)
 python3 -m venv ~/.local/share/mark-shot/ocr-venv
 ~/.local/share/mark-shot/ocr-venv/bin/pip install -U pip rapidocr onnxruntime
 
-# Code scan (zxing-cpp)
+# Code scan fallback script (zxing-cpp)
 python3 -m venv ~/.local/share/mark-shot/code-scan-venv
 ~/.local/share/mark-shot/code-scan-venv/bin/pip install -U pip zxing-cpp pillow
 ```

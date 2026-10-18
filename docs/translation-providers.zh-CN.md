@@ -1,6 +1,6 @@
 # 翻译服务提供方
 
-Mark Shot 的贴图窗口 OCR 结果可以直接翻译。翻译能力由 provider 插件提供，除原有的 OpenAI 兼容接口外，还支持 Google Gemini、Anthropic Claude，以及腾讯云机器翻译、百度翻译开放平台与网易有道智云。
+Mark Shot 的贴图窗口 OCR 结果可以直接翻译。翻译能力优先推荐由原生 Provider 插件提供，无需配置 Python 解释器或管理虚拟环境。除内置的 OpenAI 兼容接口外，还提供 Google Gemini、Anthropic Claude，以及腾讯云机器翻译、百度翻译开放平台与网易有道智云等原生插件。
 
 ## 可用的 provider
 
@@ -13,11 +13,11 @@ Mark Shot 的贴图窗口 OCR 结果可以直接翻译。翻译能力由 provide
 | `baidu-fanyi` | Baidu Translate | 百度翻译通用文本翻译（MD5 签名） | APPID、密钥 |
 | `youdao-nmt` | Youdao Translate | 有道智云文本翻译（v3 签名） | 应用 ID、应用密钥 |
 
-各插件均以独立动态库形式安装到 `<libdir>/mark-shot/plugins/`，缺少凭据的插件在设置界面显示为不可用，不会影响其他 provider。
+各插件均以独立动态库形式安装到插件目录（可通过设置窗口「插件」页面一键下载安装）。缺少凭据的插件在设置界面显示为不可用，不会影响其他 provider。
 
 ## 选择 provider
 
-设置窗口的「插件」页有 `Translation Provider` 下拉框，也可以直接写配置：
+推荐使用原生插件模式（`auto` 或 `plugin:<providerId>`）。设置窗口的「插件」页提供 `Translation Provider` 下拉选项，也可以直接在 `config.json` 中配置：
 
 ```json
 {
@@ -29,12 +29,12 @@ Mark Shot 的贴图窗口 OCR 结果可以直接翻译。翻译能力由 provide
 
 取值形式：
 
-- `auto`（默认）：按 `openai-compatible` → `gemini` → `anthropic` → `tencent-tmt` → `baidu-fanyi` → `youdao-nmt` 的固定顺序，选中第一个凭据完整的插件。这个顺序是写死的，不随插件加载顺序变化。
-- `plugin:<providerId>`：显式指定某个插件；该插件不可用时回退到 helper 脚本。
-- `builtin`：使用主程序内置的 OpenAI 兼容实现。
-- `helper`：使用 `mark-shot-translate` Python 脚本。
+- `auto`（推荐默认）：按 `openai-compatible` → `gemini` → `anthropic` → `tencent-tmt` → `baidu-fanyi` → `youdao-nmt` 的固定顺序，自动选用第一个凭据完整的插件。该顺序固定，不受插件加载先后影响。
+- `plugin:<providerId>`（推荐指定）：显式指定某个原生插件；该插件不可用时回退到兜底机制。
+- `builtin`：使用主程序内置的 OpenAI 兼容网络实现。
+- `helper`（遗留兼容）：调用历史版本的 `mark-shot-translate` Python 辅助脚本。现已推荐使用上述原生插件替代。
 
-`translation.command` 非空时优先级最高，会绕过全部插件直接执行该命令。
+`translation.command` 非空时优先级最高，会绕过全部插件直接调用外部自定义命令。常规使用建议留空并使用原生插件。
 
 ## 凭据配置
 

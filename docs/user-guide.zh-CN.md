@@ -399,14 +399,17 @@ Linux 默认位置为 `~/.local/share/mark-shot/capture-history`，遵循 XDG �
   （`QScreen::grabWindow`）、Windows（原生 WGC）。录制优先使用 PipeWire
   portal，失败时自动回退。
 
-可选辅助：
+可选能力扩展：
+
+- **原生 Provider 插件（首选推荐）**：OCR 文字识别（RapidOCR）、多渠道翻译（OpenAI / Gemini / Claude / 腾讯 / 百度 / 有道）以及二维码条码扫描（zxing-cpp）现已全面推荐使用原生插件。可在设置窗口「插件」页面一键下载安装与启用，无需配置 Python 环境或第三方脚本依赖。
+- **外部 Python 脚本（遗留兼容）**：无插件环境时仍可配置 Python 虚拟环境作为兜底选项：
 
 ```bash
-# OCR（RapidOCR / Tesseract）
+# OCR 回退脚本（RapidOCR / Tesseract）
 python3 -m venv ~/.local/share/mark-shot/ocr-venv
 ~/.local/share/mark-shot/ocr-venv/bin/pip install -U pip rapidocr onnxruntime
 
-# 二维码扫描（zxing-cpp）
+# 二维码扫描回退脚本（zxing-cpp）
 python3 -m venv ~/.local/share/mark-shot/code-scan-venv
 ~/.local/share/mark-shot/code-scan-venv/bin/pip install -U pip zxing-cpp pillow
 ```

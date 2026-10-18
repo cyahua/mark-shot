@@ -123,6 +123,7 @@ Mark Shot reads application settings from `~/.config/mark-shot/config.json` on L
   },
   "ocr": {
     "enabled": true,
+    "provider": "auto",
     "backend": "rapidocr",
     "command": "",
     "timeoutMs": 30000
@@ -222,7 +223,11 @@ To enable thinking, change `"disabled"` to `"enabled"`; do not use the literal v
 | `scrollCapture.previewGap` | Number/Object | `5` | Pixel gap between the outer frame and the scrolling preview panel. The panel is placed around the frame using the first available non-overlapping position. Aliases: `previewDistance`, `previewOffset`, `panelGap`; object form supports `gap`. |
 | `scrollCapture.hidePreviewDuringCapture` | Boolean | `false` | Hides the scrolling preview panel while capture is running even when the panel would fit, showing the floating drag handle instead. Pausing still reveals the preview panel. Aliases: `hidePreviewWhileCapturing`, `hidePanelDuringCapture`, `hideUiDuringCapture`; nested `scrollCapture.preview.hideWhileCapturing` is also supported. |
 | `ocr.enabled` | Boolean | `true` | Controls whether OCR features are available. Does not enable pinned-window background OCR by itself. |
+| `ocr.provider` | String | `"auto"` | OCR provider selection. Native plugins are recommended. Values: `"auto"` (recommended default; prefers RapidOCR plugin), `"plugin:<providerId>"` (such as `"plugin:rapidocr"`), `"builtin"` (bundled Tesseract), `"helper"` (legacy Python script). |
+| `ocr.command` | String | `""` | Custom command for external OCR processing. Takes precedence when non-empty. Native provider plugins are recommended instead of external scripts for performance and ease of deployment. |
 | `ocr.resultPanel` | Boolean/Object | `true` | Controls whether the main selection OCR flow opens an editable result window. Object form supports `enabled`, `show`, `visible`, or `use`. Aliases include `resultWindow`, `ocrResultPanel`, and `ocrResultWindow`. Environment variables `MARK_SHOT_OCR_RESULT_PANEL` and `MARK_SHOT_OCR_RESULT_WINDOW` override this config. |
+| `translation.provider` | String | `"auto"` | Translation provider selection. Native plugins are recommended. Values: `"auto"` (fixed order across providers), `"plugin:<providerId>"` (explicit plugin), `"builtin"`, `"helper"`. See [translation providers documentation](translation-providers.md). |
+| `translation.command` | String | `""` | Custom command for external translation processing. Takes precedence when non-empty. Native provider plugins are recommended over external scripts. |
 | `translation.autoAfterOcr` | Boolean | `false` | Controls whether translation starts automatically after a successful pinned-window OCR result. If enabled, choosing Translate later displays the cached translation instantly. |
 | `windowDetection.enabled` | Boolean | `true` | Controls window boundary recognition. Set to `false` to disable both built-in X11 window detection and configured external detection scripts. |
 | `windowDetection.env` | Object | `{}` | Environment variables passed to the window boundary detection script. Alias: `environment`. <br>• **Niri Script**: Automatically reads DMS bar, dock, frame, and frame-exclusion settings. It also supports `MARK_SHOT_NIRI_PANEL_EDGE` (`top`/`bottom`/`left`/`right`/`none`) and pixel offsets `MARK_SHOT_NIRI_OFFSET_X/Y/WIDTH/HEIGHT`.<br>• **Hyprland Script**: Supports `MARK_SHOT_HYPRLAND_INCLUDE_INACTIVE` (`1`/`0`) and pixel offsets `MARK_SHOT_HYPRLAND_OFFSET_X/Y/WIDTH/HEIGHT`.<br>• **GNOME Script**: Supports pixel offsets `MARK_SHOT_GNOME_OFFSET_X/Y/WIDTH/HEIGHT`. |

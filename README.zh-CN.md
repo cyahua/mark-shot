@@ -422,89 +422,34 @@ cp /tmp/fcitx5-qt/build/qt6/dbusaddons/libFcitx5Qt6DBusAddons.so* \
    ~/Qt/6.7.3/gcc_64/lib/
 ```
 
-#### OCR 后端（可选）
+#### OCR、翻译与扫码能力（首选插件，可选脚本）
 
-Mark Shot 的文字识别功能依赖内置的 `mark-shot-ocr` Python 脚本。该脚本支持 **RapidOCR**（首选，基于 PaddleOCR PP-OCR 模型）和 **Tesseract**（回退）。Linux 上会自动安装该脚本；Windows 上需要手动配置。
+Mark Shot **推荐使用原生 Provider 插件**完成文字识别、翻译与条码扫描。插件以独立动态库运行，启动迅速且无需安装 Python 解释器或配置虚拟环境。
+
+- **推荐方案：原生 Provider 插件**
+  - **OCR**：打开设置窗口「插件」页，直接下载安装 `RapidOCR` 插件（基于 PaddleOCR PP-OCR 系列模型），即可开箱使用高精度离线文字识别。
+  - **翻译**：内置支持 OpenAI 兼容 API，并提供 Google Gemini、Anthropic Claude、腾讯云机器翻译、百度翻译开放平台与网易有道等原生插件。在设置窗口「集成」填写 API 凭据即可就地翻译，详情见[翻译服务提供方文档](docs/translation-providers.zh-CN.md)。
+  - **扫码**：推荐使用 `zxing-cpp` 原生插件，支持各类常见二维码与一维条码。
+
+- **兼容方案：Python 辅助脚本（兜底）**
+  旧版 Python 辅助脚本（`mark-shot-ocr`、`mark-shot-translate`、`mark-shot-code-scan`）与外部命令（`ocr.command` / `translation.command`）仍完整保留。在无插件环境下，系统会自动回退至已配置的 Python 虚拟环境。
 
 <details>
-<summary><b>Linux</b></summary>
+<summary><b>历史方案：通过 Python 虚拟环境配置辅助脚本</b></summary>
 
 ```bash
+# Linux 下配置 OCR（RapidOCR / Tesseract）
 python3 -m venv ~/.local/share/mark-shot/ocr-venv
 ~/.local/share/mark-shot/ocr-venv/bin/pip install -U pip rapidocr onnxruntime
-```
 
-安装完成后 `mark-shot-ocr` 会被自动发现，无需额外配置。
-
-**环境变量**（可选）：
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `MARK_SHOT_OCR_VERSION` | PaddleOCR 版本（`PP-OCRv5`、`PP-OCRv4` 等） | `PP-OCRv5` |
-| `MARK_SHOT_OCR_MODEL_TYPE` | 模型大小：`mobile` 或 `server` | `mobile` |
-| `MARK_SHOT_OCR_MODEL_DIR` | 自定义模型存储目录 | `~/.local/share/mark-shot/models` |
-| `MARK_SHOT_OCR_NO_VENV` | 设为 `1` 禁用自动切换虚拟环境 | — |
-| `MARK_SHOT_OCR_PYTHON` | 指定用于 re-exec 的 Python 解释器路径 | `~/.local/share/mark-shot/ocr-venv/bin/python` |
-
-</details>
-
-<details>
-<summary><b>Windows</b></summary>
-
-内置的辅助脚本不会在 Windows 上自动安装，需要手动完成以下步骤：
-
-**1. 安装 Python 3**
-
-从 [python.org](https://www.python.org/downloads/) 下载安装 Python 3.10 或更高版本。安装时请勾选 **Add python.exe to PATH**。
-
-**2. 复制 OCR 辅助脚本**
-
-将 [Mark Shot 仓库](https://github.com/jswysnemc/mark-shot) 中的 `scripts/mark-shot-ocr` 复制到本地目录，例如 `%LOCALAPPDATA%\mark-shot\mark-shot-ocr.py`。
-
-```powershell
-New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\mark-shot"
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/jswysnemc/mark-shot/main/scripts/mark-shot-ocr" `
-  -OutFile "$env:LOCALAPPDATA\mark-shot\mark-shot-ocr.py"
-```
-
-**3. 创建虚拟环境并安装依赖**
-
-```powershell
-python -m venv "$env:LOCALAPPDATA\mark-shot\ocr-venv"
-& "$env:LOCALAPPDATA\mark-shot\ocr-venv\Scripts\pip.exe" install -U pip rapidocr onnxruntime
-```
-
-> `onnxruntime` 提供 CPU 推理。如果有兼容的 GPU，可以安装 `onnxruntime-directml` 或 `onnxruntime-gpu` 以加速识别。
-
-**4. 在 `config.json` 中配置 `ocr.command`**
-
-打开 `%LOCALAPPDATA%\mark-shot\config.json`（不存在则新建），设置 `ocr.command`：
-
-```json
-{
-  "ocr": {
-    "enabled": true,
-    "backend": "rapidocr",
-    "command": "\"%LOCALAPPDATA%\\mark-shot\\ocr-venv\\Scripts\\python.exe\" \"%LOCALAPPDATA%\\mark-shot\\mark-shot-ocr.py\" --format json --backend rapidocr {image}",
-    "timeoutMs": 30000
-  }
-}
-```
-
-将 `%LOCALAPPDATA%` 替换为实际展开后的路径（如 `C:\Users\你的用户名\AppData\Local`）。`{image}` 占位符在运行时会被替换为临时截图路径；如果省略，Mark Shot 会自动追加。
-
-> **提示**：设置环境变量 `MARK_SHOT_OCR_NO_VENV=1` 可以跳过脚本内置的虚拟环境自动检测，因为已经直接使用了虚拟环境中的 Python。
-
-</details>
-
-#### 扫码后端（可选）
-
-```bash
+# Linux 下配置二维码扫描（zxing-cpp）
 python3 -m venv ~/.local/share/mark-shot/code-scan-venv
 ~/.local/share/mark-shot/code-scan-venv/bin/pip install -U pip zxing-cpp pillow
 ```
 
-扫码 helper 优先使用 `zxing-cpp`，支持 QR Code、Data Matrix、Aztec、PDF417、EAN、UPC、Code 39、Code 93、Code 128 等常见格式。如果安装了 `pyzbar` 或 OpenCV，也会作为回退后端使用。
+Windows 下如需使用脚本，需手动安装 Python 3 并将 `scripts/mark-shot-ocr` 复制到本地，在 `config.json` 中配置 `ocr.command`。推荐改用上述原生插件免除脚本配置。
+
+</details>
 
 #### 图床上传后端（可选）
 
@@ -630,7 +575,7 @@ cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release `
 cmake --build build-windows
 ```
 
-当前 Windows 支持范围是普通截图与图片标注。滚动截图、合成器专用窗口检测和 Linux 桌面快捷方式在 Windows 上不可用。内置的 Python 辅助脚本（`mark-shot-ocr`、`mark-shot-code-scan`、`mark-shot-translate`）不会自动安装，请参考上方的 [OCR 后端](#ocr-后端可选)、[扫码后端](#扫码后端可选)和翻译章节进行手动配置。
+当前 Windows 支持范围是普通截图与图片标注。滚动截图、合成器专用窗口检测和 Linux 桌面快捷方式在 Windows 上不可用。OCR 文字识别、多渠道翻译与条码扫描功能推荐在设置窗口「插件」页一键安装原生动态库插件，无需繁琐配置外部 Python 脚本环境。
 
 ### 构建与编译
 

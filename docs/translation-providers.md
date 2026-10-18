@@ -1,6 +1,6 @@
 # Translation providers
 
-Mark Shot can translate OCR results directly in the pinned window. Translation is supplied by provider plugins. Besides the original OpenAI-compatible endpoint, Google Gemini, Anthropic Claude, Tencent Machine Translation, Baidu Translate, and Youdao are supported.
+Mark Shot can translate OCR results directly in the pinned window. Native provider plugins are the recommended approach for translation, offering direct in-process networking without requiring a Python environment. Besides the built-in OpenAI-compatible endpoint, dedicated native plugins are available for Google Gemini, Anthropic Claude, Tencent Machine Translation, Baidu Translate, and Youdao.
 
 ## Available providers
 
@@ -13,11 +13,11 @@ Mark Shot can translate OCR results directly in the pinned window. Translation i
 | `baidu-fanyi` | Baidu Translate | Baidu general text translation (MD5 signature) | APPID, secret key |
 | `youdao-nmt` | Youdao Translate | Youdao text translation (v3 signature) | app key, app secret |
 
-All provider plugins ship as separate shared libraries under `<libdir>/mark-shot/plugins/`. A plugin without credentials reports itself as unavailable in the settings window and does not affect the others.
+All provider plugins install as standalone shared libraries into the plugin directory (and can be downloaded with one click from the Plugins page in settings). A plugin without credentials reports itself as unavailable in the settings window and does not affect the others.
 
 ## Selecting a provider
 
-The Plugins page of the settings window has a `Translation Provider` combo box. The same choice can be written directly to the config file:
+Native plugin mode (`auto` or `plugin:<providerId>`) is recommended. The Plugins page of the settings window provides a `Translation Provider` selector, which corresponds to the config file:
 
 ```json
 {
@@ -29,12 +29,12 @@ The Plugins page of the settings window has a `Translation Provider` combo box. 
 
 Accepted values:
 
-- `auto` (default): picks the first plugin with complete credentials, in the fixed order `openai-compatible` → `gemini` → `anthropic` → `tencent-tmt` → `baidu-fanyi` → `youdao-nmt`. This order is hard-coded and does not depend on plugin load order.
-- `plugin:<providerId>`: selects one plugin explicitly, falling back to the helper script if that plugin is unavailable.
+- `auto` (recommended default): picks the first plugin with complete credentials, in the fixed order `openai-compatible` → `gemini` → `anthropic` → `tencent-tmt` → `baidu-fanyi` → `youdao-nmt`. This order is hard-coded and does not depend on plugin load order.
+- `plugin:<providerId>` (recommended explicit): selects one native plugin explicitly, falling back to legacy mechanisms if that plugin is unavailable.
 - `builtin`: uses the OpenAI-compatible implementation built into the main binary.
-- `helper`: uses the `mark-shot-translate` Python script.
+- `helper` (legacy fallback): invokes the legacy `mark-shot-translate` Python helper script. Using native plugins is recommended instead.
 
-A non-empty `translation.command` takes precedence over everything else and bypasses the plugins entirely.
+A non-empty `translation.command` takes precedence over everything else and bypasses the plugins entirely to invoke an external script. Native plugins are recommended for standard setups.
 
 ## Credentials
 
