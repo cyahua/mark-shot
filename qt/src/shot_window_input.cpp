@@ -123,6 +123,7 @@ void ShotWindow::mouseMoveEvent(QMouseEvent *event)
                 && previousSelection.height() >= kMinSelectionSize;
             m_selection = creationSelectionRect(m_selectionStart, imagePoint,
                                                 event->modifiers().testFlag(Qt::ShiftModifier));
+            dirty |= dismissRecognizedSelectionOnManualDragIfEnabled();
             revealSelectionInfo();
             scheduleInitialSelectionRepaint(
                 initialSelectionDirtyRegion(previousSelection, previousSelectionUsable) | dirty);

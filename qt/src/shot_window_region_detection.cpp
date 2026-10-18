@@ -8,6 +8,9 @@
 
 #include <memory>
 
+// ===== 新增 import =====
+#include <QLineF>
+
 /**
  * 【截图】【区域识别】在后台分析冻结截图，生成 UI 级候选区域。
  * @return 无返回值。
@@ -143,4 +146,33 @@ bool ShotWindow::cycleHoveredRegion(QPoint imagePoint, int direction)
         update(dirty);
     }
     return true;
+}
+
+namespace {
+
+/// 手动拖动超过该距离后，不再保留悬停识别框
+constexpr qreal kManualDragDismissDistance = 5.0;
+constexpr bool FEATURE_DISMISS_RECOGNIZED_SELECTION_ON_MANUAL_DRAG_ENABLED = true;
+
+}  // namespace
+
+/**
+ * 【截图】【区域识别】手动拖动开始后立即去掉识别选区。
+ * @return 旧识别框需要重绘的区域。
+ */
+QRegion ShotWindow::dismissRecognizedSelectionOnManualDragIfEnabled()
+{
+    if (!FEATURE_DISMISS_RECOGNIZED_SELECTION_ON_MANUAL_DRAG_ENABLED) {
+        return {};
+    }
+    if (!m_hoveredWindowRect.has_value() || m_mode != Mode::Selecting || !m_dragging) {
+        return {};
+    }
+    // 1. 【截图】【区域识别】短于点击阈值时仍保留识别框，松手后可以采纳
+    const QPointF pointer = imageToWidget(m_startupHoverValid ? m_startupHoverImagePoint : m_selectionStart);
+    if (QLineF(m_selectionClickStart, pointer).length() < kManualDragDismissDistance) {
+        return {};
+    }
+    m_regionCursor.reset();
+    return applyHoveredRect(std::nullopt);
 }

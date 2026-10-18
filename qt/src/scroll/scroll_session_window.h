@@ -235,6 +235,23 @@ private:
     QPushButton *m_saveButton = nullptr;
     QPushButton *m_copyButton = nullptr;
     QPushButton *m_cancelButton = nullptr;
+
+    // --- 新增：把手悬停或拖动时收起捕获外框，改由选区外的标记指示范围 ---
+    /// @brief 把手悬停或拖动时是否收起会被捕获的外框
+    /// @return 需要收起外框时返回 true
+    bool captureFrameSuppressedForHandle() const;
+    /// @brief 根据指针是否落在区域握柄上更新悬停，并立即重绘外框
+    /// @param localPoint 指针在覆盖层内的位置
+    /// @return 无返回值
+    void syncDragHandleHoverIfEnabled(const QPoint &localPoint);
+    /// @brief 选区外的拖动引导和范围标记所占区域
+    /// @return 需要参与遮罩与重绘的区域，未启用时为空
+    QRegion handleAvoidancePaintRegion() const;
+    /// @brief 在选区上方引导拖动把手，并在外框收起时于选区外标出大致范围
+    /// @param painter 覆盖层绘制器
+    /// @return 无返回值
+    void drawHandleAvoidanceChromeIfEnabled(QPainter &painter) const;
+    bool m_dragHandleHovered = false;
 };
 
 }  // namespace markshot::scroll

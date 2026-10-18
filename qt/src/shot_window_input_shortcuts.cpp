@@ -328,6 +328,7 @@ void ShotWindow::keyPressEvent(QKeyEvent *event)
                 const bool previousSelectionUsable = previousSelection.width() >= kMinSelectionSize
                     && previousSelection.height() >= kMinSelectionSize;
                 m_selection = creationSelectionRect(m_selectionStart, m_startupHoverImagePoint, false);
+                dirty |= dismissRecognizedSelectionOnManualDragIfEnabled();
                 revealSelectionInfo();
                 scheduleInitialSelectionRepaint(
                     initialSelectionDirtyRegion(previousSelection, previousSelectionUsable) | dirty);

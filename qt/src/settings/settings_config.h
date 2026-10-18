@@ -74,6 +74,7 @@ struct PinnedSettings {
     bool borderEnabled = true;
     QColor borderColor;
     double borderWidth = 2.0;
+    bool shadowEnabled = false;
 };
 
 struct StorageSettings {

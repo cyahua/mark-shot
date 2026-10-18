@@ -7,6 +7,7 @@ namespace markshot::scroll {
 
 void ScrollSessionWindow::updatePointerCursor(const QPoint &point)
 {
+    syncDragHandleHoverIfEnabled(point);
     // 1. 【滚动截图】【区域握柄】按钮兼顾点击切换方向与按住移动区域
     const bool grabbing = m_axisDragArmed || m_overviewDragging;
     for (QPushButton *button : {m_axisButton, m_floatingAxisButton}) {
@@ -162,7 +163,8 @@ bool ScrollSessionWindow::eventFilter(QObject *watched, QEvent *event)
         || (event->type() == QEvent::EnabledChange && button && !button->isEnabled())) {
         finishAxisDrag();
     }
-    if (event->type() == QEvent::Enter || event->type() == QEvent::EnabledChange) {
+    if (event->type() == QEvent::Enter || event->type() == QEvent::Leave
+        || event->type() == QEvent::EnabledChange) {
         updatePointerCursor(mapFromGlobal(QCursor::pos()));
     }
 

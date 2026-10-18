@@ -52,9 +52,10 @@ void PinnedImageWindow::resizeByScale(qreal scale, QPoint globalAnchor, QPointF 
     const QRectF imageRect = displayedImageRect();
     const qreal xRatio = imageRect.width() > 0.0 ? (localAnchor.x() - imageRect.left()) / imageRect.width() : 0.5;
     const qreal yRatio = imageRect.height() > 0.0 ? (localAnchor.y() - imageRect.top()) / imageRect.height() : 0.5;
-    const QPoint topLeft(globalAnchor.x() - qRound(targetSize.width() * xRatio),
-                         globalAnchor.y() - qRound(targetSize.height() * yRatio));
+    QPoint topLeft(globalAnchor.x() - qRound(targetSize.width() * xRatio),
+                   globalAnchor.y() - qRound(targetSize.height() * yRatio));
     m_scale = static_cast<qreal>(targetSize.width()) / std::max(1, m_displayBaseSize.width());
+    expandPinnedGeometryForShadowIfEnabled(&topLeft, &targetSize);
     setPinnedGeometry(QRect(topLeft, targetSize), !pinnedWindowHasLayerShellTop(this));
 }
 
@@ -67,7 +68,9 @@ QSize PinnedImageWindow::logicalPinnedSize() const
 
 QRectF PinnedImageWindow::displayedImageRect() const
 {
-    return QRectF(QPointF(m_layerShellContentOffset), QSizeF(logicalPinnedSize()));
+    QRectF rect = QRectF(QPointF(m_layerShellContentOffset), QSizeF(logicalPinnedSize()));
+    insetPinnedImageForShadowIfEnabled(&rect);
+    return rect;
 }
 
 QPoint PinnedImageWindow::pinnedTopLeft() const

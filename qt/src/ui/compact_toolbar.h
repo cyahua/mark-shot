@@ -128,7 +128,7 @@ private:
     /// @brief 根据相邻分组的可见按钮决定分隔线显示
     /// @return 无返回值
     void refreshSeparators();
-    /// @brief 选中按钮悬停时把前景换成主题色的反色
+    /// @brief 悬停时把普通工具前景换成常态色的反色
     /// @param button 工具栏按钮
     /// @param hovered 指针是否在按钮上
     /// @return 无返回值

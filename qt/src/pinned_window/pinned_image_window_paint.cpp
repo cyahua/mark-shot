@@ -92,6 +92,7 @@ void PinnedImageWindow::paintImageContents(QPainter &painter, QRectF viewport)
     painter.setClipRect(viewport, Qt::IntersectClip);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     const QRectF imageRect = displayedImageRect();
+    paintPinnedShadowIfEnabled(painter, imageRect);
     painter.drawPixmap(imageRect, m_pixmap, QRectF(QPointF(0.0, 0.0), QSizeF(m_pixmap.size())));
     paintOcrRecognitionPlatesIfEnabled(painter);
     if (m_translationActive) {

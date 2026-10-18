@@ -1,6 +1,10 @@
 #include "scroll/scroll_session_window_internal.h"
 #include "scroll/scroll_preview_chrome.h"
 
+// ===== 新增 import =====
+#include <QFontMetrics>
+#include <QLineF>
+
 namespace markshot::scroll {
 
 void ScrollSessionWindow::drawPreviewContent(QPainter &painter, const QRect &area) const
@@ -390,7 +394,7 @@ void ScrollSessionWindow::paintEvent(QPaintEvent *)
         return;
     }
 
-    if (m_uiConfig.frameEnabled && !m_panelOnlyWindow) {
+    if (m_uiConfig.frameEnabled && !m_panelOnlyWindow && !captureFrameSuppressedForHandle()) {
         const QRect region = regionLocalRect();
 #if defined(Q_OS_WIN)
         painter.setPen(QPen(QColor(94, 234, 212), 2.0));
@@ -430,6 +434,7 @@ void ScrollSessionWindow::paintEvent(QPaintEvent *)
     }
 
     drawFloatingDragHandle(painter);
+    drawHandleAvoidanceChromeIfEnabled(painter);
 
     if (m_restoreMaskAfterPaint && !m_axisDragging) {
         m_restoreMaskAfterPaint = false;
@@ -441,6 +446,256 @@ void ScrollSessionWindow::paintEvent(QPaintEvent *)
             updateInputMask();
         });
     }
+}
+
+namespace {
+
+constexpr bool FEATURE_HANDLE_FRAME_AVOIDANCE_ENABLED = true;
+constexpr qreal kAvoidanceGap = 8.0;
+constexpr qreal kAvoidanceArm = 18.0;
+
+QFont avoidanceGuideFont()
+{
+    QFont font;
+    font.setPixelSize(12);
+    font.setWeight(QFont::DemiBold);
+    return font;
+}
+
+// 线宽与原来的捕获线框相同，笔画只向选区外侧加粗
+QRectF avoidanceMarkBand(const QLineF &line, const QRect &region, qreal thickness)
+{
+    const QRectF box = QRectF(line.p1(), line.p2()).normalized();
+    const bool horizontal = std::abs(line.x2() - line.x1()) >= std::abs(line.y2() - line.y1());
+    if (horizontal) {
+        const qreal y = box.center().y() < region.top() ? box.top() - thickness : box.top();
+        return QRectF(box.left(), y, std::max(box.width(), thickness), thickness);
+    }
+    const qreal x = box.center().x() < region.left() ? box.left() - thickness : box.left();
+    return QRectF(x, box.top(), thickness, std::max(box.height(), thickness));
+}
+
+bool avoidanceMarkFits(const QLineF &line,
+                       const QRect &region,
+                       const QRect &panel,
+                       const QRect &guide,
+                       const QRect &bounds,
+                       qreal thickness)
+{
+    const QRectF box = avoidanceMarkBand(line, region, thickness);
+    if (box.intersects(QRectF(region)) || !QRectF(bounds).intersects(box)) {
+        return false;
+    }
+    if (!panel.isEmpty() && box.intersects(QRectF(panel))) {
+        return false;
+    }
+    if (!guide.isEmpty() && box.intersects(QRectF(guide))) {
+        return false;
+    }
+    return true;
+}
+
+QRect avoidanceGuideRect(const QRect &region, const QRect &bounds, const QRect &panel, int outsideGap)
+{
+    if (region.isEmpty() || bounds.isEmpty()) {
+        return {};
+    }
+
+    const QFont font = avoidanceGuideFont();
+    const QString text = MS_TR("Drag the button");
+    const int width = 10 + 14 + 6 + QFontMetrics(font).horizontalAdvance(text) + 10;
+    const int height = 26;
+    const int minLeft = bounds.left() + 4;
+    const int maxLeft = bounds.right() - width - 3;
+    if (maxLeft < minLeft) {
+        return {};
+    }
+
+    const QRect guide(std::clamp(region.center().x() - width / 2, minLeft, maxLeft),
+                      region.top() - outsideGap - height,
+                      width,
+                      height);
+    if (!bounds.contains(guide) || guide.intersects(region)) {
+        return {};
+    }
+    if (!panel.isEmpty() && guide.intersects(panel)) {
+        return {};
+    }
+    return guide;
+}
+
+void appendOutwardArm(QVector<QLineF> *lines,
+                      const QPointF &vertex,
+                      const QPointF &outward,
+                      const QRect &region,
+                      const QRect &panel,
+                      const QRect &guide,
+                      const QRect &bounds,
+                      qreal thickness)
+{
+    // 1. 从顶点向外缩短，直到笔画完全落在捕获矩形外面
+    for (qreal length = kAvoidanceArm; length >= 4.0; length -= 1.0) {
+        const QLineF line(vertex, vertex + outward * length);
+        if (avoidanceMarkFits(line, region, panel, guide, bounds, thickness)) {
+            lines->append(line);
+            return;
+        }
+    }
+}
+
+QVector<QLineF> avoidanceMarkLines(const QRect &region,
+                                   const QRect &panel,
+                                   const QRect &guide,
+                                   const QRect &bounds,
+                                   qreal thickness)
+{
+    QVector<QLineF> lines;
+    if (region.isEmpty()) {
+        return lines;
+    }
+
+    // 2. 顶点在选区角的外侧，两臂继续向外，形成 J L / 7 |-
+    const qreal top = region.top();
+    const qreal bottom = region.bottom() + 1.0;
+    const qreal left = region.left();
+    const qreal right = region.right() + 1.0;
+    const QPointF corners[] = {
+        QPointF(left - kAvoidanceGap, top - kAvoidanceGap),
+        QPointF(right + kAvoidanceGap, top - kAvoidanceGap),
+        QPointF(left - kAvoidanceGap, bottom + kAvoidanceGap),
+        QPointF(right + kAvoidanceGap, bottom + kAvoidanceGap),
+    };
+    const QPointF outwardX[] = {QPointF(-1.0, 0.0), QPointF(1.0, 0.0), QPointF(-1.0, 0.0), QPointF(1.0, 0.0)};
+    const QPointF outwardY[] = {QPointF(0.0, -1.0), QPointF(0.0, -1.0), QPointF(0.0, 1.0), QPointF(0.0, 1.0)};
+    for (int i = 0; i < 4; ++i) {
+        appendOutwardArm(&lines, corners[i], outwardX[i], region, panel, guide, bounds, thickness);
+        appendOutwardArm(&lines, corners[i], outwardY[i], region, panel, guide, bounds, thickness);
+    }
+    return lines;
+}
+
+bool dragHandleButtonContains(const QWidget *host, const QPushButton *button, const QPoint &localPoint)
+{
+    if (!host || !button || !button->isVisible()) {
+        return false;
+    }
+    const QRect mapped(button->mapTo(host, QPoint(0, 0)), button->size());
+    return mapped.adjusted(-2, -2, 2, 2).contains(localPoint);
+}
+
+}  // namespace
+
+bool ScrollSessionWindow::captureFrameSuppressedForHandle() const
+{
+    if (!FEATURE_HANDLE_FRAME_AVOIDANCE_ENABLED) {
+        return false;
+    }
+    return m_dragHandleHovered || m_axisDragArmed || m_axisDragging;
+}
+
+void ScrollSessionWindow::syncDragHandleHoverIfEnabled(const QPoint &localPoint)
+{
+    if (!FEATURE_HANDLE_FRAME_AVOIDANCE_ENABLED) {
+        return;
+    }
+
+    // 1. 预览栏方向按钮和浮动握柄都是拖动选区的把手
+    const bool hovered = dragHandleButtonContains(this, m_axisButton, localPoint)
+        || dragHandleButtonContains(this, m_floatingAxisButton, localPoint)
+        || (floatingDragHandleActive() && floatingDragHandleLocalRect().contains(localPoint));
+    if (hovered == m_dragHandleHovered) {
+        return;
+    }
+
+    // 2. 先保住旧标记仍在遮罩内，清掉外框后再收缩遮罩
+    const QRegion dirty = handleAvoidancePaintRegion() + framePaintRegion();
+    m_dragHandleHovered = hovered;
+    const QRegion next = handleAvoidancePaintRegion() + framePaintRegion();
+    m_transientPaintMask += dirty + next;
+    m_restoreMaskAfterPaint = true;
+    updateInputMask();
+    repaint(dirty + next);
+}
+
+QRegion ScrollSessionWindow::handleAvoidancePaintRegion() const
+{
+    if (!FEATURE_HANDLE_FRAME_AVOIDANCE_ENABLED || m_panelOnlyWindow || m_gnomeShellPreview) {
+        return {};
+    }
+
+    const QRect bounds(QPoint(0, 0), size());
+    const QRect region = regionLocalRect();
+    const QRect panel = m_previewPanelVisible ? previewPanelRect() : QRect();
+    const int outsideGap = std::max(10, m_uiConfig.frameGap + kCaptureFrameWidth + 4);
+    const bool suppressed = captureFrameSuppressedForHandle();
+    const QRect guide = suppressed ? avoidanceGuideRect(region, bounds, panel, outsideGap) : QRect();
+
+    QRegion painted;
+    if (!guide.isEmpty()) {
+        painted += QRegion(guide.adjusted(-kAntialiasPad,
+                                          -kAntialiasPad,
+                                          kAntialiasPad,
+                                          kAntialiasPad));
+    }
+    // 外翻折角只在外框收起时出现，占位留在遮罩里，避免清屏被裁掉
+    const qreal thickness = kCaptureFrameWidth;
+    for (const QLineF &line : avoidanceMarkLines(region, panel, guide, bounds, thickness)) {
+        painted += QRegion(avoidanceMarkBand(line, region, thickness).toAlignedRect());
+    }
+    return painted.intersected(QRegion(bounds));
+}
+
+void ScrollSessionWindow::drawHandleAvoidanceChromeIfEnabled(QPainter &painter) const
+{
+    if (!FEATURE_HANDLE_FRAME_AVOIDANCE_ENABLED || m_panelOnlyWindow || m_gnomeShellPreview
+        || m_panelTransparentForCapture) {
+        return;
+    }
+
+    const QRect bounds(QPoint(0, 0), size());
+    const QRect region = regionLocalRect();
+    const QRect panel = m_previewPanelVisible ? previewPanelRect() : QRect();
+    const int outsideGap = std::max(10, m_uiConfig.frameGap + kCaptureFrameWidth + 4);
+    const bool suppressed = captureFrameSuppressedForHandle();
+    const QRect guide = suppressed ? avoidanceGuideRect(region, bounds, panel, outsideGap) : QRect();
+    const qreal thickness = kCaptureFrameWidth;
+
+    painter.save();
+
+    if (!suppressed) {
+        painter.restore();
+        return;
+    }
+
+    // 1. 【滚动截图】【按钮引导】外框收起后，才在选区上方提示拖动按钮
+    if (!guide.isEmpty()) {
+        QPainterPath path;
+        path.addRoundedRect(QRectF(guide), 8.0, 8.0);
+        painter.setPen(QPen(QColor(94, 234, 212, 150), 1.0));
+        painter.setBrush(QColor(15, 17, 23, 236));
+        painter.drawPath(path);
+
+        painter.setPen(QPen(QColor(94, 234, 212), 1.6, Qt::SolidLine, Qt::RoundCap));
+        const int gripLeft = guide.left() + 11;
+        const int gripTop = guide.top() + 7;
+        const int gripBottom = guide.bottom() - 7;
+        painter.drawLine(gripLeft, gripTop, gripLeft, gripBottom);
+        painter.drawLine(gripLeft + 5, gripTop, gripLeft + 5, gripBottom);
+
+        painter.setPen(QColor(229, 231, 235));
+        painter.setFont(avoidanceGuideFont());
+        painter.drawText(guide.adjusted(28, 0, -8, 0), Qt::AlignVCenter | Qt::AlignLeft,
+                         MS_TR("Drag the button"));
+    }
+
+    // 2. 【滚动截图】【范围标记】折角向外翻，笔画停在捕获矩形外面
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(m_paused ? QColor(250, 204, 21, 235) : QColor(45, 212, 191, 255));
+    for (const QLineF &line : avoidanceMarkLines(region, panel, guide, bounds, thickness)) {
+        painter.drawRect(avoidanceMarkBand(line, region, thickness));
+    }
+
+    painter.restore();
 }
 
 }  // namespace markshot::scroll

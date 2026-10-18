@@ -79,6 +79,7 @@ struct PinnedWindowConfig {
     bool borderEnabled = true;
     QColor borderColor = markshot::theme::kAccent;
     qreal borderWidth = 2.0;
+    bool shadowEnabled = false;
 };
 
 /// @brief 从应用配置根对象解析置顶图片窗口配置。

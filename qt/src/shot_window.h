@@ -711,4 +711,8 @@ private:
     bool stopActiveRecordingAndExitSelectionIfEnabled();
     bool m_annotationDeleteButtonHovered = false;
     bool m_updatingSnowTextEditorGeometry = false;
+
+    /// @brief 手动拖动超过点击阈值后立即去掉识别选区。
+    /// @return 需要重绘的区域。
+    QRegion dismissRecognizedSelectionOnManualDragIfEnabled();
 };

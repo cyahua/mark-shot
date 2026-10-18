@@ -355,6 +355,7 @@ QRegion ScrollSessionWindow::overlayPaintRegion() const
                                                                   kAntialiasPad,
                                                                   kAntialiasPad));
     }
+    painted += handleAvoidancePaintRegion();
     return painted.intersected(QRegion(bounds));
 }
 
@@ -583,6 +584,7 @@ void ScrollSessionWindow::updateInputMask()
         mask += QRegion(floatingDragHandleLocalRect());
     }
     mask += framePaintRegion();
+    mask += handleAvoidancePaintRegion();
     mask += m_transientPaintMask;
     setMask(mask);
     if (QWindow *nativeWindow = windowHandle()) {

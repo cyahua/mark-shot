@@ -34,6 +34,7 @@ private:
     QCheckBox *m_alwaysOnTop = nullptr;
     QCheckBox *m_textSelectionCopy = nullptr;
     QCheckBox *m_borderEnabled = nullptr;
+    QCheckBox *m_shadowEnabled = nullptr;
     QPushButton *m_borderColor = nullptr;
     QDoubleSpinBox *m_borderWidth = nullptr;
     QCheckBox *m_ocrEnabled = nullptr;

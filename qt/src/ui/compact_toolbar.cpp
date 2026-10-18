@@ -41,6 +41,23 @@ QString roleName(ToolbarButtonRole role)
     return {};
 }
 
+/// @brief 判断悬停时是否把前景换成常态色的反色
+/// @param button 工具栏按钮
+/// @return 普通工具按钮返回 true
+bool invertForegroundOnHover(const QPushButton *button)
+{
+    const QString role = button->property("role").toString();
+    return role.isEmpty() || role == QStringLiteral("secondary");
+}
+
+/// @brief 计算图标前景的反色
+/// @param color 常态前景色
+/// @return 通道取反后的颜色
+QColor invertedInk(QColor color)
+{
+    return QColor(255 - color.red(), 255 - color.green(), 255 - color.blue(), color.alpha());
+}
+
 }
 
 /// @brief 【截图工具栏】【分组分隔】绘制分组间细线，方向与工具栏排列垂直
@@ -303,9 +320,9 @@ void CompactToolbar::syncSelectedHoverIcon(QPushButton *button, bool hovered)
     if (iconName.isEmpty() || !normalInk.isValid()) {
         return;
     }
-    // 1. 选中且悬停时前景取主题色的反色，离开后恢复常态前景
-    const bool selectedHover = button->isEnabled() && button->property("active").toBool() && hovered;
-    const QColor ink = selectedHover ? QColor(0x04, 0x2F, 0x2E) : normalInk;
+    // 1. 悬停使用更亮背景上的反色前景，离开后恢复常态前景
+    const bool hoverInk = button->isEnabled() && hovered && invertForegroundOnHover(button);
+    const QColor ink = hoverInk ? invertedInk(normalInk) : normalInk;
     button->setIcon(makeSvgIcon(iconName, ink));
 }
 

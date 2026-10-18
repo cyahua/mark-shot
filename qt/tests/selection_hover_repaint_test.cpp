@@ -1,5 +1,6 @@
 #include "shot_window.h"
 #include "support/isolated_config.h"
+#include "ui/theme.h"
 
 #include <QApplication>
 #include <QMouseEvent>
@@ -73,6 +74,60 @@ private slots:
         const QPoint outsideRight(qCeil(previous.right()), qRound(previous.center().y()));
         QVERIFY2(dirty.contains(outsideLeft), "旧悬停框左侧描边未纳入重绘");
         QVERIFY2(dirty.contains(outsideRight), "旧悬停框右侧描边未纳入重绘");
+    }
+
+    /** 验证点击尚未形成拖动时保留识别选区，无参数和返回值。 */
+    void keepsRecognizedSelectionForClick()
+    {
+        QImage image(800, 600, QImage::Format_ARGB32_Premultiplied);
+        image.fill(QColor(90, 110, 130));
+        const QRect recognized(80, 80, 200, 180);
+        ShotWindow window(image, {}, QRect(0, 0, 800, 600), {{recognized, 1}}, true);
+        window.resize(800, 600);
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        window.applyHoveredRect(recognized);
+        window.m_dragging = true;
+        window.m_selectionClickStart = QPointF(120, 120);
+        window.m_startupHoverImagePoint = QPointF(122, 121);
+        window.m_startupHoverValid = true;
+
+        window.dismissRecognizedSelectionOnManualDragIfEnabled();
+        QVERIFY(window.m_hoveredWindowRect.has_value());
+    }
+
+    /** 验证手动拖动超过点击阈值后识别选区立即消失，无参数和返回值。 */
+    void dropsRecognizedSelectionWhenDragStarts()
+    {
+        QImage image(800, 600, QImage::Format_ARGB32_Premultiplied);
+        image.fill(QColor(90, 110, 130));
+        const QRect recognized(80, 80, 200, 180);
+        ShotWindow window(image, {}, QRect(0, 0, 800, 600), {{recognized, 1}}, true);
+        window.resize(800, 600);
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        window.applyHoveredRect(recognized);
+        window.m_dragging = true;
+        window.m_selectionClickStart = window.imageToWidget(QPointF(120, 120));
+        window.m_startupHoverImagePoint = QPointF(160, 170);
+        window.m_startupHoverValid = true;
+
+        const QRegion dirty = window.dismissRecognizedSelectionOnManualDragIfEnabled();
+        QVERIFY(!window.m_hoveredWindowRect.has_value());
+        QVERIFY(!dirty.isEmpty());
+        QVERIFY(window.applyHoveredRect(recognized).isEmpty() == false);
+    }
+
+    /** 验证激活按钮使用较浅主题色，悬停使用更纯的主题色和深色前景，无参数和返回值。 */
+    void toolbarHoverIsPurerThemeThanActive()
+    {
+        const QString style = markshot::theme::panelStyleSheet();
+        QVERIFY(style.contains(QStringLiteral(
+            "QPushButton[active=\"true\"] { color: #E5E7EB; background: rgba(153, 246, 228, 78);")));
+        QVERIFY(style.contains(QStringLiteral(
+            "QPushButton:hover { color: #042F2E; background: #2DD4BF;")));
+        QVERIFY(style.contains(QStringLiteral(
+            "QPushButton[active=\"true\"]:hover { color: #042F2E; background: #2DD4BF;")));
     }
 };
 

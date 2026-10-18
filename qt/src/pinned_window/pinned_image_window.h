@@ -495,6 +495,26 @@ private:
     /// @param viewport 需要裁剪到的窗口范围。
     /// @return 选区路径，没有选区时为空。
     QPainterPath textSelectionWidgetPath(QRectF viewport) const;
+
+    // --- 新增：贴图阴影 ---
+    int m_shadowMargin = 0;
+    /// @brief 按配置为贴图留出阴影边距并改为透明背景。
+    /// @return 无返回值。
+    void applyPinnedShadowLayoutIfEnabled();
+    /// @brief 把图片矩形收进阴影边距内。
+    /// @param rect 窗口中的图片矩形。
+    /// @return 无返回值。
+    void insetPinnedImageForShadowIfEnabled(QRectF *rect) const;
+    /// @brief 按阴影边距扩展窗口几何，使图片位置保持不变。
+    /// @param topLeft 图片左上角。
+    /// @param size 图片尺寸。
+    /// @return 无返回值。
+    void expandPinnedGeometryForShadowIfEnabled(QPoint *topLeft, QSize *size) const;
+    /// @brief 在图片后方绘制柔和阴影。
+    /// @param painter 当前画笔。
+    /// @param imageRect 图片显示矩形。
+    /// @return 无返回值。
+    void paintPinnedShadowIfEnabled(QPainter &painter, const QRectF &imageRect) const;
 };
 
 }  // namespace markshot::shot

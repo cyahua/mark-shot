@@ -47,6 +47,9 @@ SettingsPagePinned::SettingsPagePinned(QWidget *parent)
     });
     m_borderWidth = addDoubleRow(windowForm, MS_TR("Border Width"), 1.0, 12.0, 1);
     m_borderWidth->setSuffix(QStringLiteral(" px"));
+    m_shadowEnabled = addSwitchRow(windowForm,
+                                   MS_TR("Pinned Shadow"),
+                                   MS_TR("Draw a soft shadow around pinned images."));
     layout->addWidget(windowCard);
 
     QFrame *ocrCard = createSettingsCard(MS_TR("OCR and Translation"),
@@ -81,6 +84,7 @@ void SettingsPagePinned::setConfig(const SettingsConfig &config)
     m_borderColorValue = config.pinned.borderColor;
     updateBorderColorButton();
     m_borderWidth->setValue(config.pinned.borderWidth);
+    m_shadowEnabled->setChecked(config.pinned.shadowEnabled);
     m_ocrEnabled->setChecked(config.pinned.ocrEnabled);
     m_autoOcr->setChecked(config.pinned.autoOcr);
     m_ocrBackend->setText(config.pinned.ocrBackend);
@@ -103,6 +107,7 @@ void SettingsPagePinned::updateConfig(SettingsConfig *config) const
     config->pinned.borderEnabled = m_borderEnabled->isChecked();
     config->pinned.borderColor = m_borderColorValue;
     config->pinned.borderWidth = m_borderWidth->value();
+    config->pinned.shadowEnabled = m_shadowEnabled->isChecked();
     config->pinned.ocrEnabled = m_ocrEnabled->isChecked();
     config->pinned.autoOcr = m_autoOcr->isChecked();
     config->pinned.ocrBackend = m_ocrBackend->text().trimmed();

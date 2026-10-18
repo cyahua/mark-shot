@@ -409,6 +409,9 @@ const QHash<QString, QString> &chineseTable()
         {QStringLiteral("Pinned Border"), QStringLiteral("置顶图片边框")},
         {QStringLiteral("Draw a border around pinned images."),
          QStringLiteral("在置顶图片周围绘制边框。")},
+        {QStringLiteral("Pinned Shadow"), QStringLiteral("贴图阴影")},
+        {QStringLiteral("Draw a soft shadow around pinned images."),
+         QStringLiteral("在贴图周围绘制柔和阴影。")},
         {QStringLiteral("Border Color"), QStringLiteral("边框颜色")},
         {QStringLiteral("Border Width"), QStringLiteral("边框宽度")},
         {QStringLiteral("OCR and Translation"), QStringLiteral("OCR 与翻译")},
@@ -704,6 +707,7 @@ const QHash<QString, QString> &chineseTable()
         {QStringLiteral("Save Scrolling Screenshot"), QStringLiteral("保存滚动截图")},
         {QStringLiteral("Dir: Vertical"), QStringLiteral("方向：纵向")},
         {QStringLiteral("Dir: Horizontal"), QStringLiteral("方向：横向")},
+        {QStringLiteral("Drag the button"), QStringLiteral("拖动按钮")},
     };
     return table;
 }

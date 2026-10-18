@@ -90,6 +90,25 @@ private slots:
 
         QCOMPARE(config.textSelectionCopyEnabled, false);
     }
+
+    /**
+     * 验证贴图阴影默认关闭，并可由配置打开。
+     * @return 无返回值。
+     */
+    void readsPinnedShadowFlag()
+    {
+        const markshot::shot::PinnedWindowConfig defaults =
+            markshot::shot::pinnedWindowConfigFromRoot(QJsonObject());
+        QCOMPARE(defaults.shadowEnabled, false);
+
+        QJsonObject pinned;
+        pinned.insert(QStringLiteral("shadowEnabled"), true);
+        QJsonObject root;
+        root.insert(QStringLiteral("pinnedWindow"), pinned);
+        const markshot::shot::PinnedWindowConfig config =
+            markshot::shot::pinnedWindowConfigFromRoot(root);
+        QCOMPARE(config.shadowEnabled, true);
+    }
 };
 
 QTEST_APPLESS_MAIN(PinnedWindowConfigTest)

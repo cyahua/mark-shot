@@ -133,6 +133,14 @@ void applyPinnedBorderConfig(const QJsonObject &pinned, PinnedWindowConfig *conf
             realFromConfigValue(pinned.value(QStringLiteral("borderWidth")))) {
         config->borderWidth = std::clamp(*width, 1.0, 12.0);
     }
+    if (const std::optional<bool> shadowEnabled =
+            cfg::boolValue(pinned,
+                           {QStringLiteral("shadowEnabled"),
+                            QStringLiteral("shadow"),
+                            QStringLiteral("dropShadow")});
+        shadowEnabled.has_value()) {
+        config->shadowEnabled = *shadowEnabled;
+    }
 }
 
 /**

@@ -250,6 +250,10 @@ PinnedSettings readPinnedSettings(const QJsonObject &root)
                       settings.borderWidth,
                       1.0,
                       12.0);
+    if (const std::optional<bool> shadowEnabled =
+            boolForKeys(pinned, {QStringLiteral("shadowEnabled"), QStringLiteral("shadow"), QStringLiteral("dropShadow")})) {
+        settings.shadowEnabled = *shadowEnabled;
+    }
     return settings;
 }
 

@@ -125,6 +125,7 @@ PinnedImageWindow::PinnedImageWindow(QImage image, std::optional<QPoint> initial
         QTimer::singleShot(0, this, [this] { startOcr(); });
     }
     applyPinnedNonWindowChromeIfEnabled();
+    applyPinnedShadowLayoutIfEnabled();
 }
 
 PinnedImageWindow::~PinnedImageWindow()
