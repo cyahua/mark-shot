@@ -1,3 +1,12 @@
+mark-shot (0.1.60-0ppa1~resolute1) resolute; urgency=medium
+
+  * Add crisp 1px borders to settings and editor viewports adapting to theme colors.
+  * Keep shape marker icon dynamically inverted on hover without resetting to star.
+  * Support optional pinned window shadow and hide scroll chrome during drag.
+  * Prioritize native plugins for OCR and translation over external scripts.
+
+ -- Mark Shot maintainers <snemc@qq.com>  Mon, 19 Oct 2026 10:00:00 +0900
+
 mark-shot (0.1.59-0ppa1~resolute1) resolute; urgency=medium
 
   * Move selection geometry, image filters, stitching, annotation state, and config into the Rust core.
