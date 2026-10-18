@@ -440,6 +440,13 @@ void ShotWindow::initializeToolbar()
         {m_toolbarAppearance.toolbarIconSize, 6, 2}, this);
     m_controls.m_toolbarPanel = panel;
     m_controls.m_toolbar = panel;
+    panel->setDynamicIconCallback([this](QPushButton *button, const QColor &ink) -> QIcon {
+        // 1. 【截图工具栏】【动态图标】为形状标记按钮根据当前形状与悬停前景色生成图标
+        if (!button || !button->property("dynamicIcon").toBool()) {
+            return {};
+        }
+        return markshot::ui::makeMarkerShapeIcon(m_markerShape, ink, m_markerFilled);
+    });
     panel->setStyleSheet(
         markshot::theme::panelStyleSheet(m_toolbarAppearance.toolbarButtonSize, m_toolbarAppearance.fontSize));
     // 工具栏点击需要清除滚轮预览，握柄事件进入窗口的拖拽与吸附逻辑

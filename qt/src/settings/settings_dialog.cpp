@@ -33,6 +33,9 @@
 #include <QStyle>
 #include <QVBoxLayout>
 
+// ===== 新增 import =====
+#include <QPainter>
+
 namespace markshot::settings {
 namespace {
 
@@ -79,6 +82,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(0, 0, 0, 0);
     rootLayout->setSpacing(0);
+    applySettingsWindowBorderMarginIfEnabled(rootLayout);
 
     auto *body = new QWidget(this);
     auto *bodyLayout = new QHBoxLayout(body);
@@ -176,6 +180,7 @@ void SettingsDialog::applyTheme(markshot::ui::UiThemeMode mode)
     const QPalette palette = tokens::settingsPalette(effectiveMode);
     qApp->setPalette(palette);
     setStyleSheet(tokens::settingsStyleSheet(effectiveMode));
+    rememberSettingsWindowBorderColorIfEnabled(effectiveMode);
     // 1. 【设置】【撤销入口】恢复图标跟随主题文本色，禁用态由图标自动降低透明度
     if (m_revertButton) {
         m_revertButton->setIcon(settingsGlyphIcon(SettingsGlyph::Reset, palette.color(QPalette::ButtonText)));
@@ -256,6 +261,52 @@ void SettingsDialog::revertChanges()
     applyConfigToPages(m_config);
     applyTheme(m_config.general.uiThemeMode);
     setStatus(MS_TR("Changes reverted"));
+}
+
+namespace {
+
+constexpr bool FEATURE_SETTINGS_WINDOW_BORDER_ENABLED = true;
+
+}  // namespace
+
+void SettingsDialog::applySettingsWindowBorderMarginIfEnabled(QBoxLayout *layout)
+{
+    if (!FEATURE_SETTINGS_WINDOW_BORDER_ENABLED || !layout) {
+        return;
+    }
+    // 1. 【设置】【窗口边框】内容内缩 1px，四边留给描边
+    layout->setContentsMargins(1, 1, 1, 1);
+}
+
+void SettingsDialog::rememberSettingsWindowBorderColorIfEnabled(markshot::ui::UiThemeMode mode)
+{
+    if (!FEATURE_SETTINGS_WINDOW_BORDER_ENABLED) {
+        return;
+    }
+    const bool light = markshot::ui::effectiveUiThemeMode(mode) == markshot::ui::UiThemeMode::Light;
+    m_windowBorderColor = light ? QColor(0xCB, 0xD5, 0xE1) : tokens::kCardBorder;
+}
+
+void SettingsDialog::paintEvent(QPaintEvent *event)
+{
+    QDialog::paintEvent(event);
+    paintSettingsWindowBorderIfEnabled();
+}
+
+void SettingsDialog::paintSettingsWindowBorderIfEnabled()
+{
+    if (!FEATURE_SETTINGS_WINDOW_BORDER_ENABLED || width() < 2 || height() < 2) {
+        return;
+    }
+    // 1. 【设置】【窗口边框】四边各画 1px，不依赖会被窗口裁切的样式表边框
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, false);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(m_windowBorderColor);
+    painter.fillRect(QRect(0, 0, width(), 1), m_windowBorderColor);
+    painter.fillRect(QRect(0, height() - 1, width(), 1), m_windowBorderColor);
+    painter.fillRect(QRect(0, 0, 1, height()), m_windowBorderColor);
+    painter.fillRect(QRect(width() - 1, 0, 1, height()), m_windowBorderColor);
 }
 
 void showSettingsDialog(QWidget *parent)

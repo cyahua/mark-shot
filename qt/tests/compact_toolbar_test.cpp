@@ -128,6 +128,47 @@ private slots:
         QVERIFY(buttons.at(1)->geometry().top() > buttons.at(0)->geometry().top());
         QCOMPARE(buttons.at(1)->geometry().left(), buttons.at(0)->geometry().left());
     }
+
+    /// @brief 验证动态图标回调在悬停进入和离开时正常触发并应用生成的图标
+    /// @return 无返回值
+    void dynamicIconCallbackInvokedOnHover()
+    {
+        // 1. 【工具栏】【动态图标测试】创建测试工具栏并注册带动态属性的按钮
+        markshot::ui::CompactToolbar toolbar(QStringLiteral("shotToolbar"), QStringLiteral("toolbarGrip"),
+                                             Qt::Horizontal, {20, 6, 3});
+        auto buttonSpec = spec("DynamicTool");
+        buttonSpec.iconName = QStringLiteral("tool-marker");
+        buttonSpec.iconInk = QColor(229, 231, 235);
+        QPushButton *button = toolbar.addButton(buttonSpec);
+        button->setProperty("dynamicIcon", true);
+
+        // 2. 【工具栏】【动态图标测试】设置动态图标生成委托，记录接收到的颜色
+        QColor receivedInk;
+        int callbackCalls = 0;
+        toolbar.setDynamicIconCallback([&](QPushButton *targetButton, const QColor &ink) -> QIcon {
+            if (targetButton == button) {
+                ++callbackCalls;
+                receivedInk = ink;
+                QPixmap pixmap(16, 16);
+                pixmap.fill(ink);
+                return QIcon(pixmap);
+            }
+            return {};
+        });
+
+        // 3. 【工具栏】【动态图标测试】模拟鼠标移入，验证生成反色悬停图标
+        QEvent enterEvent(QEvent::Enter);
+        QCoreApplication::sendEvent(button, &enterEvent);
+        QCOMPARE(callbackCalls, 1);
+        QVERIFY(receivedInk.isValid());
+        QVERIFY(receivedInk != QColor(229, 231, 235));
+
+        // 4. 【工具栏】【动态图标测试】模拟鼠标移出，验证恢复常态图标
+        QEvent leaveEvent(QEvent::Leave);
+        QCoreApplication::sendEvent(button, &leaveEvent);
+        QCOMPARE(callbackCalls, 2);
+        QCOMPARE(receivedInk, QColor(229, 231, 235));
+    }
 };
 
 QTEST_MAIN(CompactToolbarTest)

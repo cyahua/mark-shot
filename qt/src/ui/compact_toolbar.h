@@ -7,6 +7,8 @@
 #include <QVector>
 #include <QWidget>
 
+#include <functional>
+
 class QBoxLayout;
 class QPushButton;
 
@@ -107,6 +109,13 @@ public:
     /// @return 无返回值
     void setActiveActions(const QSet<QString> &activeKeys);
 
+    using DynamicIconCallback = std::function<QIcon(QPushButton *button, const QColor &ink)>;
+
+    /// @brief 设置动态图标回调函数，用于特定按钮按当前状态或悬停色动态重绘图标
+    /// @param callback 动态图标回调函数
+    /// @return 无返回值
+    void setDynamicIconCallback(DynamicIconCallback callback);
+
 protected:
     /// @brief 绘制圆角半透明背景与细边框
     /// @param event 绘制事件
@@ -133,6 +142,11 @@ private:
     /// @param hovered 指针是否在按钮上
     /// @return 无返回值
     void syncSelectedHoverIcon(QPushButton *button, bool hovered);
+    /// @brief 尝试使用动态图标回调更新按钮图标
+    /// @param button 工具栏按钮
+    /// @param ink 本次应使用的前景色
+    /// @return 动态图标已绘制时返回 true；未处理时返回 false
+    bool paintDynamicIconIfEnabled(QPushButton *button, const QColor &ink);
 
     QBoxLayout *m_layout = nullptr;
     ToolbarGrip *m_grip = nullptr;
@@ -140,6 +154,7 @@ private:
     Metrics m_metrics;
     QVector<Group> m_groups;
     bool m_refreshingSeparators = false;
+    DynamicIconCallback m_dynamicIconCallback;
 };
 
 }

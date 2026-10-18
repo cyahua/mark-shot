@@ -102,6 +102,23 @@ private:
     SettingsPageStorage *m_storagePage = nullptr;
     SettingsPageAdvanced *m_advancedPage = nullptr;
     SettingsPageAbout *m_aboutPage = nullptr;
+
+    /// @brief 为设置窗口留出四边 1px，避免内容盖住边框
+    /// @param layout 窗口根布局
+    /// @return 无返回值
+    void applySettingsWindowBorderMarginIfEnabled(QBoxLayout *layout);
+    /// @brief 按当前主题记下窗口边框颜色
+    /// @param mode 界面主题
+    /// @return 无返回值
+    void rememberSettingsWindowBorderColorIfEnabled(markshot::ui::UiThemeMode mode);
+    /// @brief 在窗口四边绘制 1px 边框
+    /// @param event 绘制事件
+    /// @return 无返回值
+    void paintEvent(QPaintEvent *event) override;
+    /// @brief 绘制设置窗口四边 1px 边框
+    /// @return 无返回值
+    void paintSettingsWindowBorderIfEnabled();
+    QColor m_windowBorderColor{203, 213, 225};
 };
 
 /// @brief 显示全局设置窗口，重复调用会复用现有窗口。

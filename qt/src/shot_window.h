@@ -715,4 +715,12 @@ private:
     /// @brief 手动拖动超过点击阈值后立即去掉识别选区。
     /// @return 需要重绘的区域。
     QRegion dismissRecognizedSelectionOnManualDragIfEnabled();
+
+    /// @brief 为图片编辑窗口绘制 1px 边框。
+    /// @param painter 窗口画笔。
+    /// @return 无返回值。
+    void paintEditorWindowBorderIfEnabled(QPainter &painter) const;
+    /// @brief 记下形状标记按钮的当前形状，供悬停换色时重绘
+    /// @return 无返回值
+    void rememberShapeMarkerToolbarIconIfEnabled();
 };

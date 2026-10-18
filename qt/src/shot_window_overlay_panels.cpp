@@ -172,6 +172,7 @@ void ShotWindow::refreshShapeMarkerToolbarButton()
     if (!m_controls.m_shapeMarkerToolbarButton) {
         return;
     }
+    rememberShapeMarkerToolbarIconIfEnabled();
     m_controls.m_shapeMarkerToolbarButton->setIcon(
         markshot::ui::makeMarkerShapeIcon(m_markerShape, QColor(), m_markerFilled));
     m_controls.m_shapeMarkerToolbarButton->setToolTip(
@@ -240,4 +241,25 @@ void ShotWindow::toggleShapeMarkerPopup()
     refreshShapeMarkerToolbarButton();
     m_controls.m_shapeMarkerPopup->show();
     updateShapeMarkerPopupGeometry();
+}
+
+namespace {
+
+constexpr bool FEATURE_REMEMBER_SHAPE_MARKER_TOOLBAR_ICON_ENABLED = true;
+
+}  // namespace
+
+void ShotWindow::rememberShapeMarkerToolbarIconIfEnabled()
+{
+    if (!FEATURE_REMEMBER_SHAPE_MARKER_TOOLBAR_ICON_ENABLED) {
+        return;
+    }
+    QPushButton *button = m_controls.m_shapeMarkerToolbarButton;
+    if (!button) {
+        return;
+    }
+    // 1. 【工具栏】【形状标记】把当前形状交给悬停换色，避免被固定星星图标覆盖
+    button->setProperty("dynamicIcon", true);
+    button->setProperty("markerShape", static_cast<int>(m_markerShape));
+    button->setProperty("markerFilled", m_markerFilled);
 }

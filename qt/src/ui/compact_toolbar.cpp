@@ -323,7 +323,16 @@ void CompactToolbar::syncSelectedHoverIcon(QPushButton *button, bool hovered)
     // 1. 悬停使用更亮背景上的反色前景，离开后恢复常态前景
     const bool hoverInk = button->isEnabled() && hovered && invertForegroundOnHover(button);
     const QColor ink = hoverInk ? invertedInk(normalInk) : normalInk;
+    if (paintDynamicIconIfEnabled(button, ink)) {
+        return;
+    }
     button->setIcon(makeSvgIcon(iconName, ink));
+}
+
+void CompactToolbar::setDynamicIconCallback(DynamicIconCallback callback)
+{
+    // 1. 【工具栏】【动态图标】记录外部注入的图标绘制委托
+    m_dynamicIconCallback = std::move(callback);
 }
 
 void CompactToolbar::refreshSeparators()
@@ -342,6 +351,26 @@ void CompactToolbar::refreshSeparators()
         hasVisibleBefore = hasVisibleBefore || groupVisible;
     }
     m_refreshingSeparators = false;
+}
+
+namespace {
+
+constexpr bool FEATURE_DYNAMIC_TOOLBAR_ICON_ENABLED = true;
+
+}  // namespace
+
+bool CompactToolbar::paintDynamicIconIfEnabled(QPushButton *button, const QColor &ink)
+{
+    if (!FEATURE_DYNAMIC_TOOLBAR_ICON_ENABLED || !button || !m_dynamicIconCallback) {
+        return false;
+    }
+    // 1. 【工具栏】【动态图标】委托外部按当前状态或悬停色生成图标
+    const QIcon dynamicIcon = m_dynamicIconCallback(button, ink);
+    if (dynamicIcon.isNull()) {
+        return false;
+    }
+    button->setIcon(dynamicIcon);
+    return true;
 }
 
 }

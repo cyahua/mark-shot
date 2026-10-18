@@ -173,6 +173,7 @@ void ShotWindow::paintEvent(QPaintEvent *event)
     if (selectionPointerVisible()) {
         drawSelectionPointer(painter, imageToWidget(m_startupHoverImagePoint));
     }
+    paintEditorWindowBorderIfEnabled(painter);
 }
 
 void ShotWindow::resizeEvent(QResizeEvent *)
@@ -514,4 +515,28 @@ void ShotWindow::mousePressEvent(QMouseEvent *event)
     }
     m_draft = annotation;
     update();
+}
+
+namespace {
+
+constexpr bool FEATURE_EDITOR_WINDOW_BORDER_ENABLED = true;
+
+}  // namespace
+
+void ShotWindow::paintEditorWindowBorderIfEnabled(QPainter &painter) const
+{
+    if (!FEATURE_EDITOR_WINDOW_BORDER_ENABLED || !m_imageNavigationEnabled || width() < 2 || height() < 2) {
+        return;
+    }
+
+    // 1. 【图片编辑】【窗口边框】1px 描边盖在画布最上层，截图遮罩不走这条路径
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, false);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(148, 163, 184));
+    painter.fillRect(QRect(0, 0, width(), 1), painter.brush());
+    painter.fillRect(QRect(0, height() - 1, width(), 1), painter.brush());
+    painter.fillRect(QRect(0, 0, 1, height()), painter.brush());
+    painter.fillRect(QRect(width() - 1, 0, 1, height()), painter.brush());
+    painter.restore();
 }
