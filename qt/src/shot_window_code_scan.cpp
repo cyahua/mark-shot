@@ -89,5 +89,7 @@ void ShotWindow::scanCodeSelection()
     window->show();
     window->raise();
     window->activateWindow();
+    // 1. 扫码结束即终结截图会话，关闭包括其他屏幕覆盖层在内的全部冻结窗口
+    emit sessionCancelRequested();
     close();
 }
